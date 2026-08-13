@@ -1,6 +1,6 @@
 # Éclipses solaires
 
-Application Next.js 16 qui liste les **20 prochaines éclipses solaires visibles** depuis un emplacement donné.
+Application Next.js 16 qui liste les prochaines éclipses solaires **visibles depuis un emplacement donné** et les prochaines éclipses **totales dans le monde**.
 
 ## Fonctionnalités
 
@@ -8,6 +8,8 @@ Application Next.js 16 qui liste les **20 prochaines éclipses solaires visibles
 - bouton **Ma position** via la Geolocation API
 - calcul des prochaines éclipses visibles avec **astronomy-engine**
 - prise en charge des éclipses **partielles**, **annulaires** et **totales**
+- mode mondial pour parcourir uniquement les prochaines éclipses **totales**
+- pagination progressive de la liste mondiale via **Charger plus**
 - carte **Leaflet** inline dans chaque carte d'éclipse
 - filtrage des éclipses réellement visibles localement (soleil au-dessus de l'horizon pendant au moins une phase)
 
@@ -32,11 +34,12 @@ Ouvrir ensuite `http://localhost:3000`.
 
 ## Vérifier les calculs
 
-Le projet contient un petit script qui calcule les éclipses visibles depuis Paris et vérifie quelques invariants simples.
+Le projet contient de petits scripts qui valident les recherches locale et mondiale.
 
 ```powershell
 cd E:\___SITES___\eclipses.alexishayat.me
 bun run check:eclipses
+bun run check:eclipses:global
 bun run check:nasa
 ```
 
@@ -50,6 +53,7 @@ bun run build
 ## Notes techniques
 
 - Les calculs astronomiques sont faits dans `lib/eclipses.ts`.
+- La pagination mondiale des éclipses totales est calculée côté serveur depuis `SearchGlobalSolarEclipse` / `NextGlobalSolarEclipse`.
 - Les trajectoires sont extraites des tables NASA GSFC `SEpath` (lignes centrales à intervalles de 120 s) via `lib/nasa-eclipse-path.ts`.
 - Si les serveurs NASA sont indisponibles, la carte est masquée et un message explicite est affiché.
 - Les résultats sont mis en cache côté serveur par zone de `0.5° x 0.5°` avec les primitives de cache de Next.js 16.

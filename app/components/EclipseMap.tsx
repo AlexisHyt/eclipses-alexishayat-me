@@ -17,8 +17,8 @@ L.Icon.Default.mergeOptions({
 });
 
 interface Props {
-  userLat: number;
-  userLng: number;
+  userLat?: number | null;
+  userLng?: number | null;
   pathPoints: PathPoint[];
   maxLat: number | null;
   maxLng: number | null;
@@ -78,8 +78,17 @@ export default function EclipseMap({
       mapRef.current = null;
     }
 
+    const hasUserLocation = userLat != null && userLng != null;
+    const initialCenter = hasUserLocation
+      ? ([userLat, userLng] as [number, number])
+      : maxLat !== null && maxLng !== null
+        ? ([maxLat, maxLng] as [number, number])
+        : pathPoints.length > 0
+          ? ([pathPoints[0].lat, pathPoints[0].lng] as [number, number])
+          : ([0, 0] as [number, number]);
+
     const map = L.map(containerRef.current, {
-      center: [userLat, userLng],
+      center: initialCenter,
       zoom: 3,
       zoomControl: false,
       scrollWheelZoom: false,
@@ -120,24 +129,27 @@ export default function EclipseMap({
       }
     }
 
-    // User location marker
-    const userIcon = L.divIcon({
-      html: `<div style="width:10px;height:10px;border-radius:50%;background:#818cf8;border:2px solid #fff;box-shadow:0 0 6px #818cf8"></div>`,
-      className: "",
-      iconSize: [10, 10],
-      iconAnchor: [5, 5],
-    });
-    L.marker([userLat, userLng], { icon: userIcon })
-      .bindTooltip("Votre position", {
-        direction: "top",
-        className: "eclipse-tooltip",
-      })
-      .addTo(map);
-
     const boundsPoints: [number, number][] = [
-      [userLat, userLng],
       ...pathPoints.map((point) => [point.lat, point.lng] as [number, number]),
     ];
+
+    if (hasUserLocation) {
+      const userPosition: [number, number] = [userLat, userLng];
+      const userIcon = L.divIcon({
+        html: `<div style="width:10px;height:10px;border-radius:50%;background:#818cf8;border:2px solid #fff;box-shadow:0 0 6px #818cf8"></div>`,
+        className: "",
+        iconSize: [10, 10],
+        iconAnchor: [5, 5],
+      });
+      L.marker(userPosition, { icon: userIcon })
+        .bindTooltip("Votre position", {
+          direction: "top",
+          className: "eclipse-tooltip",
+        })
+        .addTo(map);
+
+      boundsPoints.unshift(userPosition);
+    }
 
     if (maxLat !== null && maxLng !== null && pathPoints.length === 0) {
       boundsPoints.push([maxLat, maxLng]);

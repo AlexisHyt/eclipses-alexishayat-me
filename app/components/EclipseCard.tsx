@@ -9,8 +9,8 @@ const EclipseMap = dynamic(() => import("./EclipseMap"), { ssr: false });
 interface Props {
   eclipse: EclipseWithPath;
   index: number;
-  userLat: number;
-  userLng: number;
+  userLat?: number | null;
+  userLng?: number | null;
 }
 
 const TYPE_LABELS: Record<string, string> = {
@@ -57,6 +57,11 @@ function formatDuration(minutes: number) {
   return s > 0 ? `${m} min ${s} s` : `${m} min`;
 }
 
+function formatCoordinate(value: number, positive: string, negative: string) {
+  const abs = Math.abs(value).toFixed(2);
+  return `${abs}° ${value >= 0 ? positive : negative}`;
+}
+
 export default function EclipseCard({
   eclipse,
   index,
@@ -65,8 +70,14 @@ export default function EclipseCard({
 }: Props) {
   const [open, setOpen] = useState(false);
   const browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-  const obscurationPct = Math.round(eclipse.obscuration * 100);
+  const obscurationPct =
+    eclipse.obscuration !== null ? Math.round(eclipse.obscuration * 100) : null;
+  const hasContactTimes =
+    eclipse.partialBeginISO !== null ||
+    eclipse.partialEndISO !== null ||
+    eclipse.totalBeginISO !== null ||
+    eclipse.totalEndISO !== null;
+  const hasUserLocation = userLat !== null && userLng !== null;
 
   return (
     <article className="rounded-2xl border border-white/8 bg-white/3 backdrop-blur-sm overflow-hidden transition hover:border-white/15">
@@ -102,15 +113,27 @@ export default function EclipseCard({
                 {formatTime(eclipse.peakISO)}
               </span>
             </span>
-            <span>
-              ☀️ Obscuration :{" "}
-              <span className="text-white/70">{obscurationPct} %</span>
-            </span>
-            {eclipse.centralDurationMin > 0 && (
+            {obscurationPct !== null && (
               <span>
-                ⏱ Durée centrale :{" "}
+                ☀️ Obscuration :{" "}
+                <span className="text-white/70">{obscurationPct} %</span>
+              </span>
+            )}
+            {eclipse.centralDurationMin !== null &&
+              eclipse.centralDurationMin > 0 && (
+                <span>
+                  ⏱ Durée centrale :{" "}
+                  <span className="text-white/70">
+                    {formatDuration(eclipse.centralDurationMin)}
+                  </span>
+                </span>
+              )}
+            {eclipse.maxLat !== null && eclipse.maxLng !== null && (
+              <span>
+                📍 Maximum :{" "}
                 <span className="text-white/70">
-                  {formatDuration(eclipse.centralDurationMin)}
+                  {formatCoordinate(eclipse.maxLat, "N", "S")} ·{" "}
+                  {formatCoordinate(eclipse.maxLng, "E", "W")}
                 </span>
               </span>
             )}
@@ -137,47 +160,53 @@ export default function EclipseCard({
       {/* Expanded content */}
       {open && (
         <div className="px-5 pb-5 flex flex-col gap-4 border-t border-white/6 pt-4">
-          {/* Time zone note */}
-          <p className="text-xs text-white/35">
-            Heures affichées selon votre fuseau navigateur ({browserTimeZone}),
-            format 24 h.
-          </p>
+          {hasContactTimes && (
+            <>
+              <p className="text-xs text-white/35">
+                Heures affichées selon votre fuseau navigateur (
+                {browserTimeZone}), format 24 h.
+              </p>
 
-          {/* Contact times */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-            <div className="rounded-lg bg-white/4 px-3 py-2">
-              <div className="text-white/40 mb-0.5">Début partiel</div>
-              <div className="text-white/80 font-mono">
-                {formatTime(eclipse.partialBeginISO)}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                {eclipse.partialBeginISO && (
+                  <div className="rounded-lg bg-white/4 px-3 py-2">
+                    <div className="text-white/40 mb-0.5">Début partiel</div>
+                    <div className="text-white/80 font-mono">
+                      {formatTime(eclipse.partialBeginISO)}
+                    </div>
+                  </div>
+                )}
+                {eclipse.totalBeginISO && (
+                  <div className="rounded-lg bg-white/4 px-3 py-2">
+                    <div className="text-white/40 mb-0.5">
+                      Début {eclipse.type === "Total" ? "total" : "annulaire"}
+                    </div>
+                    <div className="text-white/80 font-mono">
+                      {formatTime(eclipse.totalBeginISO)}
+                    </div>
+                  </div>
+                )}
+                {eclipse.totalEndISO && (
+                  <div className="rounded-lg bg-white/4 px-3 py-2">
+                    <div className="text-white/40 mb-0.5">
+                      Fin {eclipse.type === "Total" ? "total" : "annulaire"}
+                    </div>
+                    <div className="text-white/80 font-mono">
+                      {formatTime(eclipse.totalEndISO)}
+                    </div>
+                  </div>
+                )}
+                {eclipse.partialEndISO && (
+                  <div className="rounded-lg bg-white/4 px-3 py-2">
+                    <div className="text-white/40 mb-0.5">Fin partiel</div>
+                    <div className="text-white/80 font-mono">
+                      {formatTime(eclipse.partialEndISO)}
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-            {eclipse.totalBeginISO && (
-              <div className="rounded-lg bg-white/4 px-3 py-2">
-                <div className="text-white/40 mb-0.5">
-                  Début {eclipse.type === "Total" ? "total" : "annulaire"}
-                </div>
-                <div className="text-white/80 font-mono">
-                  {formatTime(eclipse.totalBeginISO)}
-                </div>
-              </div>
-            )}
-            {eclipse.totalEndISO && (
-              <div className="rounded-lg bg-white/4 px-3 py-2">
-                <div className="text-white/40 mb-0.5">
-                  Fin {eclipse.type === "Total" ? "total" : "annulaire"}
-                </div>
-                <div className="text-white/80 font-mono">
-                  {formatTime(eclipse.totalEndISO)}
-                </div>
-              </div>
-            )}
-            <div className="rounded-lg bg-white/4 px-3 py-2">
-              <div className="text-white/40 mb-0.5">Fin partiel</div>
-              <div className="text-white/80 font-mono">
-                {formatTime(eclipse.partialEndISO)}
-              </div>
-            </div>
-          </div>
+            </>
+          )}
 
           {eclipse.nasaPathStatus === "unavailable" ? (
             <div className="rounded-lg border border-rose-400/30 bg-rose-500/10 px-4 py-6 text-center text-sm text-rose-200">
@@ -203,7 +232,8 @@ export default function EclipseCard({
           )}
 
           <p className="text-[10px] text-white/25 text-right">
-            Heures locales · Trajectoire source NASA (quand disponible)
+            {hasUserLocation ? "Heures locales" : "Vue mondiale"} · Trajectoire
+            source NASA (quand disponible)
           </p>
         </div>
       )}

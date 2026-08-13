@@ -9,6 +9,7 @@
     "lint": "biome check",
     "format": "biome format --write",
     "check:eclipses": "bun run scripts/check-eclipses.ts",
+    "check:eclipses:global": "bun run scripts/check-global-eclipses.ts",
     "check:nasa": "bun run scripts/check-nasa-path.ts"
   },
   "dependencies": {

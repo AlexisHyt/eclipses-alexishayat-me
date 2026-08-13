@@ -18,7 +18,7 @@ export default function Home() {
                 Éclipses solaires
               </h1>
               <p className="text-sm text-white/50">
-                Prochaines éclipses visibles depuis votre position
+                En local ou les prochaines totales dans le monde
               </p>
             </div>
           </div>

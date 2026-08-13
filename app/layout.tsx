@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Éclipses solaires",
   description:
-    "Découvrez les prochaines éclipses solaires (totales, annulaires, partielles) visibles depuis votre position, calculées en temps réel.",
+    "Découvrez les prochaines éclipses solaires visibles depuis votre position et les prochaines éclipses totales dans le monde, calculées en temps réel.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

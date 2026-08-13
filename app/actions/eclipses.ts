@@ -2,7 +2,11 @@
 
 import { cacheLife } from "next/cache";
 import type { PathPoint } from "@/lib/eclipse-path";
-import { type EclipseResult, getEclipsesForLocation } from "@/lib/eclipses";
+import {
+  type EclipseResult,
+  getEclipsesForLocation,
+  getGlobalTotalEclipsesPage,
+} from "@/lib/eclipses";
 import {
   fetchNasaEclipsePath,
   type NasaPathStatus,
@@ -14,16 +18,15 @@ export interface EclipseWithPath extends EclipseResult {
   nasaSourceUrl: string | null;
 }
 
-async function getCachedEclipsesForGridCell(
-  lat: number,
-  lng: number,
+export interface GlobalEclipsesPageWithPath {
+  eclipses: EclipseWithPath[];
+  nextCursorISO: string | null;
+}
+
+async function enrichEclipsesWithPath(
+  eclipses: EclipseResult[],
 ): Promise<EclipseWithPath[]> {
-  "use cache";
-  cacheLife("days");
-
-  const eclipses = await getEclipsesForLocation(lat, lng);
-
-  const enriched = await Promise.all(
+  return Promise.all(
     eclipses.map(async (eclipse) => {
       const nasaPath = await fetchNasaEclipsePath(
         eclipse.peakISO,
@@ -38,8 +41,33 @@ async function getCachedEclipsesForGridCell(
       };
     }),
   );
+}
 
-  return enriched;
+async function getCachedEclipsesForGridCell(
+  lat: number,
+  lng: number,
+): Promise<EclipseWithPath[]> {
+  "use cache";
+  cacheLife("days");
+
+  const eclipses = await getEclipsesForLocation(lat, lng);
+
+  return enrichEclipsesWithPath(eclipses);
+}
+
+async function getCachedGlobalTotalEclipsesPage(
+  afterISO: string | null,
+  limit: number,
+): Promise<GlobalEclipsesPageWithPath> {
+  "use cache";
+  cacheLife("weeks");
+
+  const page = await getGlobalTotalEclipsesPage(afterISO, limit);
+
+  return {
+    eclipses: await enrichEclipsesWithPath(page.eclipses),
+    nextCursorISO: page.nextCursorISO,
+  };
 }
 
 /**
@@ -63,4 +91,19 @@ export async function fetchEclipsesForLocation(
   const rLng = Math.round(lng * 2) / 2;
 
   return getCachedEclipsesForGridCell(rLat, rLng);
+}
+
+export async function fetchGlobalTotalEclipsesPage(
+  afterISO: string | null = null,
+  limit = 10,
+): Promise<GlobalEclipsesPageWithPath> {
+  if (afterISO !== null && Number.isNaN(new Date(afterISO).getTime())) {
+    throw new Error("Curseur invalide.");
+  }
+
+  if (!Number.isInteger(limit) || limit < 1 || limit > 50) {
+    throw new Error("Limite invalide.");
+  }
+
+  return getCachedGlobalTotalEclipsesPage(afterISO, limit);
 }

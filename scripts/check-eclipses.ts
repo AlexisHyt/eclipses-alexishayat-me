@@ -14,6 +14,10 @@ async function main() {
 
   for (let i = 0; i < eclipses.length; i++) {
     const eclipse = eclipses[i];
+    if (eclipse.obscuration === null) {
+      throw new Error(`Obscuration absente pour ${eclipse.peakISO}`);
+    }
+
     if (eclipse.obscuration <= 0 || eclipse.obscuration > 1) {
       throw new Error(
         `Obscuration invalide pour ${eclipse.peakISO}: ${eclipse.obscuration}`,
@@ -31,11 +35,17 @@ async function main() {
 
   console.log(`OK: ${eclipses.length} éclipses visibles calculées pour Paris.`);
   console.table(
-    eclipses.slice(0, 5).map((eclipse) => ({
-      date: eclipse.peakISO,
-      type: eclipse.type,
-      obscuration: `${Math.round(eclipse.obscuration * 100)}%`,
-    })),
+    eclipses.slice(0, 5).map((eclipse) => {
+      if (eclipse.obscuration === null) {
+        throw new Error(`Obscuration absente pour ${eclipse.peakISO}`);
+      }
+
+      return {
+        date: eclipse.peakISO,
+        type: eclipse.type,
+        obscuration: `${Math.round(eclipse.obscuration * 100)}%`,
+      };
+    }),
   );
 }
 
