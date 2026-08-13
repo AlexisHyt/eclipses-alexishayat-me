@@ -1,36 +1,66 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Éclipses solaires
 
-## Getting Started
+Application Next.js 16 qui liste les **20 prochaines éclipses solaires visibles** depuis un emplacement donné.
 
-First, run the development server:
+## Fonctionnalités
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- recherche d'emplacement via **Nominatim / OpenStreetMap**
+- bouton **Ma position** via la Geolocation API
+- calcul des prochaines éclipses visibles avec **astronomy-engine**
+- prise en charge des éclipses **partielles**, **annulaires** et **totales**
+- carte **Leaflet** inline dans chaque carte d'éclipse
+- filtrage des éclipses réellement visibles localement (soleil au-dessus de l'horizon pendant au moins une phase)
+
+## Stack
+
+- `next@16`
+- `react@19`
+- `astronomy-engine`
+- `leaflet`
+- `tailwindcss@4`
+- `bun`
+
+## Lancer en local
+
+```powershell
+cd E:\___SITES___\eclipses.alexishayat.me
+bun install
+bun run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Ouvrir ensuite `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Vérifier les calculs
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Le projet contient un petit script qui calcule les éclipses visibles depuis Paris et vérifie quelques invariants simples.
 
-## Learn More
+```powershell
+cd E:\___SITES___\eclipses.alexishayat.me
+bun run check:eclipses
+bun run check:nasa
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Build de production
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```powershell
+cd E:\___SITES___\eclipses.alexishayat.me
+bun run build
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Notes techniques
 
-## Deploy on Vercel
+- Les calculs astronomiques sont faits dans `lib/eclipses.ts`.
+- Les trajectoires sont extraites des tables NASA GSFC `SEpath` (lignes centrales à intervalles de 120 s) via `lib/nasa-eclipse-path.ts`.
+- Si les serveurs NASA sont indisponibles, la carte est masquée et un message explicite est affiché.
+- Les résultats sont mis en cache côté serveur par zone de `0.5° x 0.5°` avec les primitives de cache de Next.js 16.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Fichiers principaux
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `app/page.tsx`
+- `app/components/EclipsesApp.tsx`
+- `app/components/LocationPicker.tsx`
+- `app/components/EclipseCard.tsx`
+- `app/components/EclipseMap.tsx`
+- `app/actions/eclipses.ts`
+- `lib/eclipses.ts`
+- `lib/nasa-eclipse-path.ts`
