@@ -15,6 +15,9 @@
     "check:sun": "bun run scripts/check-sun.ts",
     "check:apsides": "bun run scripts/check-apsides.ts",
     "check:sky": "bun run scripts/check-sky.ts",
+    "check:transits": "bun run scripts/check-transits.ts",
+    "check:apod": "bun run scripts/check-apod.ts",
+    "check:weather": "bun run scripts/check-weather.ts",
     "build:stars": "bun run scripts/build-stars.ts",
     "build:icons": "bun run scripts/build-icons.ts",
     "build:constellations": "bun run scripts/build-constellations.ts"

@@ -2,26 +2,40 @@
 
 import { useState } from "react";
 import { useI18n } from "@/app/i18n/context";
+import ApodApp from "./ApodApp";
 import ApsidesApp from "./ApsidesApp";
 import EclipsesApp from "./EclipsesApp";
 import LocationPicker, { type Location } from "./LocationPicker";
 import MoonPhasesApp from "./MoonPhasesApp";
 import NightSkyApp from "./NightSkyApp";
 import SunApp from "./SunApp";
+import TransitsApp from "./TransitsApp";
+import WeatherApp from "./WeatherApp";
 
-type Tab = "eclipses" | "moon" | "sun" | "apsides" | "night";
+type Tab =
+  | "apod"
+  | "weather"
+  | "eclipses"
+  | "moon"
+  | "sun"
+  | "apsides"
+  | "night"
+  | "transits";
 
 const TABS: { id: Tab; icon: string }[] = [
+  { id: "apod", icon: "📷" },
+  { id: "weather", icon: "🌦️" },
   { id: "eclipses", icon: "🌑" },
   { id: "moon", icon: "🌗" },
   { id: "sun", icon: "☀️" },
   { id: "apsides", icon: "📏" },
   { id: "night", icon: "✨" },
+  { id: "transits", icon: "🔭" },
 ];
 
 export default function SkyApp() {
   const { t } = useI18n();
-  const [tab, setTab] = useState<Tab>("eclipses");
+  const [tab, setTab] = useState<Tab>("apod");
   const [location, setLocation] = useState<Location | null>(null);
 
   return (
@@ -70,11 +84,14 @@ export default function SkyApp() {
         aria-labelledby={`tab-${tab}`}
         key={tab}
       >
+        {tab === "apod" && <ApodApp />}
+        {tab === "weather" && <WeatherApp location={location} />}
         {tab === "eclipses" && <EclipsesApp location={location} />}
         {tab === "moon" && <MoonPhasesApp location={location} />}
         {tab === "sun" && <SunApp location={location} />}
         {tab === "apsides" && <ApsidesApp />}
         {tab === "night" && <NightSkyApp location={location} />}
+        {tab === "transits" && <TransitsApp location={location} />}
       </div>
     </div>
   );

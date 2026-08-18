@@ -2,6 +2,7 @@ import type { ApsisType } from "@/lib/apsides";
 import type { EclipseType } from "@/lib/eclipses";
 import type { MoonPhaseKey, MoonQuarterKey } from "@/lib/moon";
 import type { SkyBodyId } from "@/lib/sky";
+import type { TransitPlanet, TransitVisibility } from "@/lib/transits";
 
 export const LOCALES = ["fr", "en"] as const;
 
@@ -52,11 +53,66 @@ const fr = {
 
   tabs: {
     label: "Sections",
+    apod: "Photo du jour",
+    weather: "Météo",
     eclipses: "Éclipses",
     moon: "Phases de Lune",
     sun: "Soleil",
     apsides: "Apsides",
     night: "Ciel du soir",
+    transits: "Transits",
+  },
+
+  apod: {
+    error: "Impossible de récupérer la photo du jour de la NASA.",
+    intro:
+      "Chaque jour, la NASA publie une image de l'Univers accompagnée de son explication, écrite par un astronome.",
+    videoBadge: "Vidéo du jour",
+    watchVideo: "Regarder la vidéo",
+    openSource: "Ouvrir le média d'origine",
+    hdLink: "Voir en haute résolution",
+    pageLink: "Page du jour sur apod.nasa.gov",
+    publicDomain: "NASA · domaine public",
+    byAuthor: (author: string) => `© ${author}`,
+    imageAlt: (title: string) => `Photo du jour de la NASA : ${title}`,
+    noMedia: "Le média du jour ne peut pas être affiché ici.",
+    englishNote: "Explication reprise telle quelle de la NASA, en anglais.",
+    credit: "Astronomy Picture of the Day · NASA / api.nasa.gov",
+  },
+
+  weather: {
+    errorUnavailable:
+      "Impossible de récupérer la météo pour cet emplacement. Veuillez réessayer.",
+    errorUnauthorized:
+      "Clé OpenWeatherMap refusée. Vérifiez OPEN_WEATHER_API_KEY dans le fichier .env ; une clé nouvellement créée peut mettre jusqu'à deux heures à être activée.",
+    pickLocation:
+      "Sélectionnez un emplacement pour voir la météo d'aujourd'hui et des prochains jours.",
+    nowAt: (place: string) => `Maintenant à ${place}`,
+    yourLocation: "votre emplacement",
+    feelsLike: (temperature: string) => `Ressenti ${temperature}`,
+    todayRange: (min: string, max: string) =>
+      `${min} / ${max} d'ici la fin de la journée`,
+    todayHours: "Aujourd'hui, par tranches de 3 heures",
+    noSlices:
+      "Plus aucune tranche pour aujourd'hui : la prévision reprend demain.",
+    daysTitle: (count: number) => `Les ${count} prochains jours`,
+    eveningNote:
+      "Chaque jour est résumé par sa tranche du soir, la plus proche de 18 h locale ; les températures encadrant la barre sont le minimum et le maximum de la journée entière.",
+    evening: "Soir",
+    humidity: "Humidité",
+    wind: "Vent",
+    gust: "Rafales",
+    pressure: "Pression",
+    visibility: "Visibilité",
+    clouds: "Nébulosité",
+    dewPoint: "Point de rosée",
+    pop: "Risque de précipitations",
+    sunrise: "Lever du Soleil",
+    sunset: "Coucher du Soleil",
+    timeZoneNote: (offset: string) =>
+      `Heures indiquées à l'heure locale de l'emplacement (${offset}), format 24 h.`,
+    credit:
+      "Observations et prévisions OpenWeatherMap · relevé actuel et prévision à 5 jours par tranches de 3 h · point de rosée déduit de la température et de l'humidité",
   },
 
   eclipses: {
@@ -265,6 +321,50 @@ const fr = {
       uranus: "Uranus",
     } satisfies Record<SkyBodyId, string>,
   },
+
+  transits: {
+    error: "Erreur lors du calcul des transits.",
+    pickLocation:
+      "Sélectionnez un emplacement pour voir les prochains transits visibles.",
+    introBefore: "Un ",
+    introStrong: "transit",
+    introAfter:
+      " se produit quand Mercure ou Vénus passe entre la Terre et le Soleil : la planète se détache alors en silhouette noire sur le disque solaire, pendant quelques heures.",
+    rarity:
+      "Mercure transite une douzaine de fois par siècle, Vénus deux fois tous les cent vingt ans environ : la liste couvre donc plusieurs siècles.",
+    count: (count: number) =>
+      `${count} prochain${count > 1 ? "s" : ""} transit${count > 1 ? "s" : ""} visible${count > 1 ? "s" : ""} d'ici`,
+    empty: "Aucun transit visible depuis cet emplacement.",
+    contactStart: "Premier contact",
+    contactPeak: "Maximum",
+    contactFinish: "Dernier contact",
+    duration: "Durée totale",
+    visibleWindow: "Visible d'ici",
+    visibleFor: (duration: string) => `${duration} au-dessus de l'horizon`,
+    sunAt: (altitude: string, compass: string) =>
+      `Soleil à ${altitude}° · ${compass}`,
+    sunBelow: "Soleil sous l'horizon",
+    separation: "Séparation minimale",
+    silhouette: "Silhouette",
+    silhouetteRatio: (ratio: number) => `1/${ratio} du diamètre solaire`,
+    sunDiameter: "Diamètre du Soleil",
+    discLabel: (planet: string) =>
+      `Trajet de ${planet} sur le disque solaire, vu depuis la Terre`,
+    discCaption:
+      "Schéma : la corde est placée à sa distance réelle du centre du disque et la silhouette est à l'échelle, mais l'inclinaison du trajet n'est pas représentée.",
+    timeZoneNote: (timeZone: string) =>
+      `Heures affichées selon votre fuseau navigateur (${timeZone}), format 24 h.`,
+    credit: (timeZone: string) =>
+      `Contacts géocentriques via astronomy-engine, hauteurs du Soleil corrigées de la réfraction · fuseau ${timeZone}`,
+    planets: {
+      mercury: "Mercure",
+      venus: "Vénus",
+    } satisfies Record<TransitPlanet, string>,
+    visibility: {
+      full: "Entièrement visible",
+      partial: "Partiellement visible",
+    } satisfies Record<TransitVisibility, string>,
+  },
 };
 
 export type Dictionary = typeof fr;
@@ -292,11 +392,64 @@ const en: Dictionary = {
 
   tabs: {
     label: "Sections",
+    apod: "Picture of the day",
+    weather: "Weather",
     eclipses: "Eclipses",
     moon: "Moon phases",
     sun: "Sun",
     apsides: "Apsides",
     night: "Night sky",
+    transits: "Transits",
+  },
+
+  apod: {
+    error: "Could not fetch NASA's picture of the day.",
+    intro:
+      "Every day, NASA publishes an image of our universe along with its explanation, written by an astronomer.",
+    videoBadge: "Video of the day",
+    watchVideo: "Watch the video",
+    openSource: "Open the original media",
+    hdLink: "View in high resolution",
+    pageLink: "See the day's page on apod.nasa.gov",
+    publicDomain: "NASA · public domain",
+    byAuthor: (author: string) => `© ${author}`,
+    imageAlt: (title: string) => `NASA's picture of the day: ${title}`,
+    noMedia: "The media of the day cannot be displayed here.",
+    englishNote: "Explanation reproduced as published by NASA.",
+    credit: "Astronomy Picture of the Day · NASA / api.nasa.gov",
+  },
+
+  weather: {
+    errorUnavailable:
+      "Could not fetch the weather for this location. Please try again.",
+    errorUnauthorized:
+      "OpenWeatherMap rejected the API key. Check OPEN_WEATHER_API_KEY in the .env file; a freshly created key can take up to two hours to become active.",
+    pickLocation: "Pick a location to see today's weather and the days ahead.",
+    nowAt: (place: string) => `Right now in ${place}`,
+    yourLocation: "your location",
+    feelsLike: (temperature: string) => `Feels like ${temperature}`,
+    todayRange: (min: string, max: string) =>
+      `${min} / ${max} for the rest of the day`,
+    todayHours: "Today, in 3-hour slots",
+    noSlices: "No slot left for today: the forecast resumes tomorrow.",
+    daysTitle: (count: number) => `The next ${count} days`,
+    eveningNote:
+      "Each day is summed up by its evening slot, the one closest to 18:00 local time; the temperatures around the bar are the minimum and maximum of the whole day.",
+    evening: "Evening",
+    humidity: "Humidity",
+    wind: "Wind",
+    gust: "Gusts",
+    pressure: "Pressure",
+    visibility: "Visibility",
+    clouds: "Cloud cover",
+    dewPoint: "Dew point",
+    pop: "Chance of precipitation",
+    sunrise: "Sunrise",
+    sunset: "Sunset",
+    timeZoneNote: (offset: string) =>
+      `Times shown in the location's local time (${offset}), 24 h format.`,
+    credit:
+      "Observations and forecast from OpenWeatherMap · current reading and 5-day forecast in 3-hour slots · dew point derived from temperature and humidity",
   },
 
   eclipses: {
@@ -494,6 +647,49 @@ const en: Dictionary = {
       jupiter: "Jupiter",
       saturn: "Saturn",
       uranus: "Uranus",
+    },
+  },
+
+  transits: {
+    error: "Could not compute the transits.",
+    pickLocation: "Pick a location to see the next visible transits.",
+    introBefore: "A ",
+    introStrong: "transit",
+    introAfter:
+      " happens when Mercury or Venus passes between the Earth and the Sun: for a few hours, the planet stands out as a black silhouette against the solar disc.",
+    rarity:
+      "Mercury transits about a dozen times per century, Venus twice every hundred and twenty years or so: the list therefore spans several centuries.",
+    count: (count: number) =>
+      `${count} upcoming transit${count > 1 ? "s" : ""} visible from here`,
+    empty: "No transit visible from this location.",
+    contactStart: "First contact",
+    contactPeak: "Greatest transit",
+    contactFinish: "Last contact",
+    duration: "Total duration",
+    visibleWindow: "Visible from here",
+    visibleFor: (duration: string) => `${duration} above the horizon`,
+    sunAt: (altitude: string, compass: string) =>
+      `Sun at ${altitude}° · ${compass}`,
+    sunBelow: "Sun below the horizon",
+    separation: "Minimum separation",
+    silhouette: "Silhouette",
+    silhouetteRatio: (ratio: number) => `1/${ratio} of the Sun's diameter`,
+    sunDiameter: "Sun's diameter",
+    discLabel: (planet: string) =>
+      `Path of ${planet} across the solar disc, seen from the Earth`,
+    discCaption:
+      "Schematic: the chord sits at its real distance from the centre of the disc and the silhouette is to scale, but the tilt of the path is not shown.",
+    timeZoneNote: (timeZone: string) =>
+      `Times shown in your browser time zone (${timeZone}), 24 h format.`,
+    credit: (timeZone: string) =>
+      `Geocentric contacts via astronomy-engine, Sun altitudes corrected for refraction · time zone ${timeZone}`,
+    planets: {
+      mercury: "Mercury",
+      venus: "Venus",
+    },
+    visibility: {
+      full: "Fully visible",
+      partial: "Partly visible",
     },
   },
 };

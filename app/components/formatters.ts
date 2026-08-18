@@ -81,6 +81,14 @@ const RELATIVE_DAYS: Record<
   },
 };
 
+/** Used for the transits, which are decades or centuries apart. */
+const RELATIVE_YEARS: Record<Locale, (years: number) => string> = {
+  fr: (years) => `dans ${years} an${years > 1 ? "s" : ""}`,
+  en: (years) => `in ${years} year${years > 1 ? "s" : ""}`,
+};
+
+const DAYS_PER_YEAR = 365.2425;
+
 export function formatFullDate(iso: string, locale: Locale) {
   return new Date(iso).toLocaleDateString(LOCALE_TAGS[locale], {
     weekday: "long",
@@ -121,8 +129,81 @@ export function formatTimeWithZone(iso: string, locale: Locale) {
   return `${hour}:${minute} ${zone}`;
 }
 
+/**
+ * 14:32 — the clock time where the weather happens, not where the reader is.
+ *
+ * OpenWeatherMap gives a place's zone as an offset rather than a name, so the
+ * instant is shifted by it and then read in UTC.
+ */
+export function formatTimeAtOffset(
+  iso: string,
+  locale: Locale,
+  offsetSec: number,
+) {
+  const shifted = new Date(new Date(iso).getTime() + offsetSec * 1000);
+
+  return shifted.toLocaleTimeString(LOCALE_TAGS[locale], {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "UTC",
+  });
+}
+
+/** That same offset spelled out: UTC+2, UTC−3:30, UTC. */
+export function formatUtcOffset(offsetSec: number) {
+  if (offsetSec === 0) return "UTC";
+
+  const minutes = Math.round(Math.abs(offsetSec) / 60);
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  const sign = offsetSec < 0 ? "−" : "+";
+
+  return `UTC${sign}${hours}${rest === 0 ? "" : `:${String(rest).padStart(2, "0")}`}`;
+}
+
 export function formatKm(km: number, locale: Locale) {
   return `${new Intl.NumberFormat(LOCALE_TAGS[locale]).format(km)} km`;
+}
+
+/** 1 013 hPa — `Intl` has no sanctioned hectopascal unit, hence the suffix. */
+export function formatPressure(hectopascals: number, locale: Locale) {
+  return `${new Intl.NumberFormat(LOCALE_TAGS[locale]).format(hectopascals)} hPa`;
+}
+
+/** 18 °C in French, 18°C in English: `Intl` knows where the space goes. */
+export function formatTemperature(celsius: number, locale: Locale) {
+  return new Intl.NumberFormat(LOCALE_TAGS[locale], {
+    style: "unit",
+    unit: "celsius",
+    maximumFractionDigits: 0,
+  }).format(celsius);
+}
+
+/** 24 km/h */
+export function formatSpeed(kmh: number, locale: Locale) {
+  return new Intl.NumberFormat(LOCALE_TAGS[locale], {
+    style: "unit",
+    unit: "kilometer-per-hour",
+    maximumFractionDigits: 0,
+  }).format(kmh);
+}
+
+/** 3,4 mm of rain or melted snow. */
+export function formatMillimetres(mm: number, locale: Locale) {
+  return new Intl.NumberFormat(LOCALE_TAGS[locale], {
+    style: "unit",
+    unit: "millimeter",
+    maximumFractionDigits: 1,
+  }).format(mm);
+}
+
+/** A 0–1 ratio written as a percentage: 0.35 becomes 35 %. */
+export function formatPercent(ratio: number, locale: Locale) {
+  return new Intl.NumberFormat(LOCALE_TAGS[locale], {
+    style: "percent",
+    maximumFractionDigits: 0,
+  }).format(ratio);
 }
 
 /** 13 h 45 */
@@ -175,4 +256,17 @@ export function formatInDays(iso: string, fromISO: string, locale: Locale) {
   if (days <= 0) return words.today;
   if (days === 1) return words.tomorrow;
   return words.inDays(days);
+}
+
+/**
+ * Countdown for distant events: "dans 6 ans" beyond a year, and the plain day
+ * count below it, where years would round everything to zero.
+ */
+export function formatInYears(iso: string, fromISO: string, locale: Locale) {
+  const days =
+    (new Date(iso).getTime() - new Date(fromISO).getTime()) /
+    (24 * 60 * 60 * 1000);
+
+  if (days < DAYS_PER_YEAR) return formatInDays(iso, fromISO, locale);
+  return RELATIVE_YEARS[locale](Math.round(days / DAYS_PER_YEAR));
 }

@@ -15,10 +15,17 @@ import {
   formatDurationMinutes,
   formatFullDate,
   formatInDays,
+  formatInYears,
   formatKm,
+  formatMillimetres,
+  formatPercent,
+  formatPressure,
   formatShortDate,
   formatSignedDuration,
+  formatSpeed,
+  formatTemperature,
   formatTime,
+  formatTimeAtOffset,
   formatTimeWithZone,
 } from "@/app/components/formatters";
 import {
@@ -121,7 +128,14 @@ export function useFormatters() {
       shortDate: (iso: string) => formatShortDate(iso, locale),
       time: (iso: string) => formatTime(iso, locale),
       timeWithZone: (iso: string) => formatTimeWithZone(iso, locale),
+      timeAtOffset: (iso: string, offsetSec: number) =>
+        formatTimeAtOffset(iso, locale, offsetSec),
       km: (km: number) => formatKm(km, locale),
+      pressure: (hectopascals: number) => formatPressure(hectopascals, locale),
+      temperature: (celsius: number) => formatTemperature(celsius, locale),
+      speed: (kmh: number) => formatSpeed(kmh, locale),
+      millimetres: (mm: number) => formatMillimetres(mm, locale),
+      percent: (ratio: number) => formatPercent(ratio, locale),
       durationHM: (seconds: number) => formatDurationHM(seconds, locale),
       durationMinutes: (minutes: number) =>
         formatDurationMinutes(minutes, locale),
@@ -130,6 +144,8 @@ export function useFormatters() {
       compass: (azimuth: number) => compassPoint(azimuth, locale),
       inDays: (iso: string, fromISO: string) =>
         formatInDays(iso, fromISO, locale),
+      inYears: (iso: string, fromISO: string) =>
+        formatInYears(iso, fromISO, locale),
     }),
     [locale],
   );

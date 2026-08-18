@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 const description =
-  "Sky réunit les prochaines éclipses solaires, les phases de la Lune, le lever et le coucher du Soleil, les périgées et périhélies à venir, ainsi que le ciel du soir visible depuis votre position, calculés en temps réel.";
+  "Sky réunit la photo du jour de la NASA, la météo du jour et des jours à venir, les prochaines éclipses solaires, les phases de la Lune, le lever et le coucher du Soleil, les périgées et périhélies à venir, le ciel du soir et les prochains transits de Mercure et de Vénus visibles depuis votre position, calculés en temps réel.";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://sky.alexishayat.me"),
@@ -23,6 +23,12 @@ export const metadata: Metadata = {
   applicationName: "Sky",
   keywords: [
     "astronomie",
+    "photo du jour NASA",
+    "APOD",
+    "météo",
+    "prévisions météo",
+    "transit de Mercure",
+    "transit de Vénus",
     "éclipse solaire",
     "phases de la Lune",
     "lever du Soleil",
