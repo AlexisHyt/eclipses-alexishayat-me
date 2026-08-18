@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
+import { useI18n } from "@/app/i18n/context";
 import { formatKm } from "./formatters";
 import { createStage } from "./three/stage";
 
@@ -125,6 +126,7 @@ export default function OrbitScene({
   trueAnomaly,
   distanceKm,
 }: Props) {
+  const { locale, t } = useI18n();
   const containerRef = useRef<HTMLDivElement>(null);
   const [failed, setFailed] = useState(false);
 
@@ -224,7 +226,7 @@ export default function OrbitScene({
     body.position.copy(current);
     body.add(
       makeLabel(
-        `${bodyName} · ${formatKm(distanceKm)}`,
+        `${bodyName} · ${formatKm(distanceKm, locale)}`,
         "rgba(255,255,255,0.75)",
         -0.09,
       ),
@@ -247,13 +249,13 @@ export default function OrbitScene({
     apoColor,
     trueAnomaly,
     distanceKm,
+    locale,
   ]);
 
   if (failed) {
     return (
       <div className="flex h-72 items-center justify-center rounded-2xl border border-white/8 bg-white/3 px-5 text-center text-sm text-white/40 sm:h-96">
-        Votre navigateur ne permet pas d&apos;afficher l&apos;orbite en 3D
-        (WebGL indisponible).
+        {t.apsides.webglUnavailable}
       </div>
     );
   }

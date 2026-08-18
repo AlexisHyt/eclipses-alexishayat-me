@@ -3,9 +3,9 @@
 import dynamic from "next/dynamic";
 import { useEffect, useState, useTransition } from "react";
 import { fetchNightSky } from "@/app/actions/sky";
+import { useFormatters, useI18n } from "@/app/i18n/context";
 import { SIDEREAL_HOURS_PER_SECOND } from "@/lib/sidereal";
 import type { NightSky } from "@/lib/sky";
-import { formatDurationHM, formatShortDate, formatTime } from "./formatters";
 import type { Location } from "./LocationPicker";
 
 interface Props {
@@ -30,11 +30,13 @@ function offsetFor(iso: string, sky: NightSky, durationMinutes: number) {
 }
 
 export default function NightSkyApp({ location }: Props) {
+  const { t } = useI18n();
+  const fmt = useFormatters();
   const [sky, setSky] = useState<NightSky | null>(null);
   const [offsetMinutes, setOffsetMinutes] = useState(0);
   const [nowISO, setNowISO] = useState<string | null>(null);
   const [showConstellations, setShowConstellations] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const lat = location?.lat ?? null;
@@ -49,7 +51,7 @@ export default function NightSkyApp({ location }: Props) {
     const now = new Date();
     const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    setError(null);
+    setFailed(false);
     startTransition(async () => {
       try {
         const data = await fetchNightSky(
@@ -69,7 +71,7 @@ export default function NightSkyApp({ location }: Props) {
         // Open on the current moment when the night is already under way.
         setOffsetMinutes(offsetFor(now.toISOString(), data, duration));
       } catch (e) {
-        setError("Erreur lors du calcul du ciel de la nuit.");
+        setFailed(true);
         console.error(e);
       }
     });
@@ -78,7 +80,7 @@ export default function NightSkyApp({ location }: Props) {
   if (location === null) {
     return (
       <div className="rounded-xl border border-dashed border-white/10 px-5 py-10 text-center text-sm text-white/30">
-        Sélectionnez un emplacement pour voir le ciel de la nuit prochaine.
+        {t.night.pickLocation}
       </div>
     );
   }
@@ -92,10 +94,10 @@ export default function NightSkyApp({ location }: Props) {
     );
   }
 
-  if (error !== null) {
+  if (failed) {
     return (
       <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm text-red-400">
-        {error}
+        {t.night.error}
       </div>
     );
   }
@@ -131,7 +133,7 @@ export default function NightSkyApp({ location }: Props) {
     >
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-semibold uppercase tracking-widest text-white/40">
-          Ciel de {location.label}
+          {t.night.skyOf(location.label)}
         </h2>
 
         <StarSphere
@@ -149,10 +151,10 @@ export default function NightSkyApp({ location }: Props) {
         <div className="flex flex-col gap-3 rounded-2xl border border-white/8 bg-white/3 px-5 py-4">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <span className="font-mono text-lg text-white/90">
-              {formatTime(currentISO)}
+              {fmt.time(currentISO)}
             </span>
             <span className="text-xs capitalize text-white/40">
-              {formatShortDate(currentISO)}
+              {fmt.shortDate(currentISO)}
             </span>
           </div>
 
@@ -165,24 +167,24 @@ export default function NightSkyApp({ location }: Props) {
             onChange={(event) =>
               setOffsetMinutes(Number.parseInt(event.target.value, 10))
             }
-            aria-label="Avancer ou reculer dans la nuit"
+            aria-label={t.night.sliderLabel}
             className="w-full accent-indigo-400"
           />
 
           <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs text-white/40">
             <span>
-              {sky.isFallbackWindow ? "Début" : "Coucher du Soleil"} ·{" "}
+              {sky.isFallbackWindow ? t.night.windowStart : t.night.sunset} ·{" "}
               <span className="font-mono text-white/60">
-                {formatTime(sky.startISO)}
+                {fmt.time(sky.startISO)}
               </span>
             </span>
             <span className="text-white/30">
-              {formatDurationHM(durationMinutes * 60)} de nuit
+              {t.night.nightLength(fmt.durationHM(durationMinutes * 60))}
             </span>
             <span>
-              {sky.isFallbackWindow ? "Fin" : "Lever du Soleil"} ·{" "}
+              {sky.isFallbackWindow ? t.night.windowEnd : t.night.sunrise} ·{" "}
               <span className="font-mono text-white/60">
-                {formatTime(sky.endISO)}
+                {fmt.time(sky.endISO)}
               </span>
             </span>
           </div>
@@ -195,7 +197,7 @@ export default function NightSkyApp({ location }: Props) {
                 disabled={offsetMinutes === nowOffset}
                 className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/70 transition hover:border-white/20 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
               >
-                Revenir à maintenant
+                {t.night.backToNow}
               </button>
             )}
             <button
@@ -208,7 +210,7 @@ export default function NightSkyApp({ location }: Props) {
                   : "border-white/10 bg-white/5 text-white/60 hover:border-white/20 hover:bg-white/10"
               }`}
             >
-              Constellations
+              {t.night.constellations}
             </button>
           </div>
         </div>
@@ -216,30 +218,23 @@ export default function NightSkyApp({ location }: Props) {
 
       {sky.isFallbackWindow && (
         <p className="rounded-xl border border-amber-400/20 bg-amber-400/10 px-5 py-3 text-xs text-amber-200/80">
-          À cette latitude le Soleil ne se lève ou ne se couche pas en ce moment
-          : la plage affichée couvre simplement 18 h à 6 h.
+          {t.night.fallbackWindow}
         </p>
       )}
 
-      <p className="text-xs text-white/25">
-        Faites glisser pour regarder autour de vous, la molette pour zoomer. Les
-        étoiles sont dessinées jusqu&apos;à la magnitude 6,5, leur taille suit
-        leur éclat et leur couleur leur indice B−V. Le curseur fait tourner la
-        sphère céleste au rythme sidéral ; la Lune et les planètes, qui se
-        déplacent par rapport aux étoiles, suivent leur propre trajectoire.
-      </p>
+      <p className="text-xs text-white/25">{t.night.help}</p>
 
       <p className="pt-1 text-center text-xs text-white/25">
-        Étoiles du{" "}
+        {t.night.creditStarsFrom}{" "}
         <a
           href="https://github.com/astronexus/HYG-Database"
           target="_blank"
           rel="noopener noreferrer"
           className="underline underline-offset-2 hover:text-white/40"
         >
-          catalogue HYG
+          {t.night.creditCatalogue}
         </a>{" "}
-        (CC BY-SA 4.0), constellations de{" "}
+        {t.night.creditConstellationsFrom}{" "}
         <a
           href="https://github.com/ofrohn/d3-celestial"
           target="_blank"
@@ -248,9 +243,9 @@ export default function NightSkyApp({ location }: Props) {
         >
           d3-celestial
         </a>{" "}
-        (BSD 3-Clause), positions des planètes et heures calculées via
-        astronomy-engine · fuseau{" "}
-        {Intl.DateTimeFormat().resolvedOptions().timeZone}
+        {t.night.creditCredits(
+          Intl.DateTimeFormat().resolvedOptions().timeZone,
+        )}
       </p>
     </div>
   );

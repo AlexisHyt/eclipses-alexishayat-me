@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useI18n } from "@/app/i18n/context";
 import ApsidesApp from "./ApsidesApp";
 import EclipsesApp from "./EclipsesApp";
 import LocationPicker, { type Location } from "./LocationPicker";
@@ -10,15 +11,16 @@ import SunApp from "./SunApp";
 
 type Tab = "eclipses" | "moon" | "sun" | "apsides" | "night";
 
-const TABS: { id: Tab; label: string; icon: string }[] = [
-  { id: "eclipses", label: "Éclipses", icon: "🌑" },
-  { id: "moon", label: "Phases de Lune", icon: "🌗" },
-  { id: "sun", label: "Soleil", icon: "☀️" },
-  { id: "apsides", label: "Apsides", icon: "📏" },
-  { id: "night", label: "Ciel du soir", icon: "✨" },
+const TABS: { id: Tab; icon: string }[] = [
+  { id: "eclipses", icon: "🌑" },
+  { id: "moon", icon: "🌗" },
+  { id: "sun", icon: "☀️" },
+  { id: "apsides", icon: "📏" },
+  { id: "night", icon: "✨" },
 ];
 
 export default function SkyApp() {
+  const { t } = useI18n();
   const [tab, setTab] = useState<Tab>("eclipses");
   const [location, setLocation] = useState<Location | null>(null);
 
@@ -27,7 +29,7 @@ export default function SkyApp() {
       {/* Location, shared by every tab */}
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-semibold uppercase tracking-widest text-white/40">
-          Votre emplacement
+          {t.location.title}
         </h2>
         <LocationPicker
           onLocationChange={setLocation}
@@ -38,26 +40,26 @@ export default function SkyApp() {
       {/* Tabs */}
       <div
         role="tablist"
-        aria-label="Sections"
+        aria-label={t.tabs.label}
         className="flex flex-wrap gap-1 border-b border-white/8"
       >
-        {TABS.map((t) => (
+        {TABS.map((item) => (
           <button
-            key={t.id}
+            key={item.id}
             type="button"
             role="tab"
-            id={`tab-${t.id}`}
-            aria-selected={tab === t.id}
-            aria-controls={`panel-${t.id}`}
-            onClick={() => setTab(t.id)}
+            id={`tab-${item.id}`}
+            aria-selected={tab === item.id}
+            aria-controls={`panel-${item.id}`}
+            onClick={() => setTab(item.id)}
             className={`-mb-px flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium whitespace-nowrap cursor-pointer transition ${
-              tab === t.id
+              tab === item.id
                 ? "border-indigo-400 text-white"
                 : "border-transparent text-white/50 hover:text-white/80"
             }`}
           >
-            <span aria-hidden>{t.icon}</span>
-            {t.label}
+            <span aria-hidden>{item.icon}</span>
+            {t.tabs[item.id]}
           </button>
         ))}
       </div>

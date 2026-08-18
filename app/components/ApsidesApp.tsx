@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useEffect, useState, useTransition } from "react";
 import { fetchApsides } from "@/app/actions/apsides";
+import { useFormatters, useI18n } from "@/app/i18n/context";
 import {
   type ApsidesData,
   type ApsisEvent,
@@ -10,12 +11,6 @@ import {
   MOON_DISTANCE_RANGE_KM,
   SUN_DISTANCE_RANGE_KM,
 } from "@/lib/apsides";
-import {
-  formatFullDate,
-  formatInDays,
-  formatKm,
-  formatTime,
-} from "./formatters";
 
 // Three.js is a heavy, browser-only dependency: keep it out of the initial
 // bundle and out of the server render.
@@ -26,25 +21,11 @@ const OrbitScene = dynamic(() => import("./OrbitScene"), {
   ),
 });
 
-const TYPE_LABELS: Record<ApsisType, string> = {
-  perigee: "Périgée",
-  apogee: "Apogée",
-  perihelion: "Périhélie",
-  aphelion: "Aphélie",
-};
-
 const TYPE_BADGE: Record<ApsisType, string> = {
   perigee: "bg-sky-500/20 text-sky-300 border border-sky-500/30",
   apogee: "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30",
   perihelion: "bg-amber-500/20 text-amber-300 border border-amber-500/30",
   aphelion: "bg-orange-500/20 text-orange-300 border border-orange-500/30",
-};
-
-const TYPE_HINTS: Record<ApsisType, string> = {
-  perigee: "au plus près de la Terre",
-  apogee: "au plus loin de la Terre",
-  perihelion: "Terre au plus près du Soleil",
-  aphelion: "Terre au plus loin du Soleil",
 };
 
 const APSIS_COLORS: Record<ApsisType, string> = {
@@ -73,21 +54,21 @@ function SceneCaption({
   bodyName: string;
   atISO: string;
 }) {
+  const { t } = useI18n();
+  const fmt = useFormatters();
   const eccentricity = (apoKm - periKm) / (apoKm + periKm);
 
   return (
     <p className="text-xs text-white/25">
-      Position réelle de {bodyName} le{" "}
+      {t.apsides.captionPosition(bodyName)}{" "}
       <span className="text-white/40">
-        {formatFullDate(atISO)} à {formatTime(atISO)}
+        {fmt.fullDate(atISO)} {t.apsides.captionAt} {fmt.time(atISO)}
       </span>{" "}
-      · distances à l&apos;échelle, tailles des corps volontairement exagérées ·
-      le cercle en pointillé est l&apos;orbite circulaire de même demi-grand axe
-      · excentricité{" "}
+      {t.apsides.captionScale}{" "}
       <span className="font-mono text-white/40">
         e = {eccentricity.toFixed(4)}
       </span>{" "}
-      · faites glisser pour tourner autour de la scène.
+      {t.apsides.captionDrag}
     </p>
   );
 }
@@ -100,6 +81,8 @@ interface RowProps {
 }
 
 function ApsisRow({ event, fromISO, range, showAu = false }: RowProps) {
+  const { t } = useI18n();
+  const fmt = useFormatters();
   const ratio = Math.min(
     Math.max((event.distanceKm - range.min) / (range.max - range.min), 0),
     1,
@@ -113,23 +96,23 @@ function ApsisRow({ event, fromISO, range, showAu = false }: RowProps) {
           <span
             className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${TYPE_BADGE[event.type]}`}
           >
-            {TYPE_LABELS[event.type]}
+            {t.apsides.types[event.type]}
           </span>
           <span className="text-sm font-medium capitalize text-white/90">
-            {formatFullDate(event.timeISO)}
+            {fmt.fullDate(event.timeISO)}
           </span>
           <span className="font-mono text-xs text-white/50">
-            {formatTime(event.timeISO)}
+            {fmt.time(event.timeISO)}
           </span>
         </div>
         <p className="text-xs text-white/40">
-          {TYPE_HINTS[event.type]} · {formatInDays(event.timeISO, fromISO)}
+          {t.apsides.hints[event.type]} · {fmt.inDays(event.timeISO, fromISO)}
         </p>
       </div>
 
       <div className="flex w-full shrink-0 flex-col gap-1.5 sm:w-52">
         <span className="font-mono text-sm text-white/85">
-          {formatKm(event.distanceKm)}
+          {fmt.km(event.distanceKm)}
         </span>
         {showAu && (
           <span className="font-mono text-[11px] text-white/35">
@@ -148,22 +131,24 @@ function ApsisRow({ event, fromISO, range, showAu = false }: RowProps) {
 }
 
 export default function ApsidesApp() {
+  const { t } = useI18n();
+  const fmt = useFormatters();
   const [data, setData] = useState<ApsidesData | null>(null);
   const [fromISO, setFromISO] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     const now = new Date().toISOString();
 
-    setError(null);
+    setFailed(false);
     startTransition(async () => {
       try {
         const result = await fetchApsides(now);
         setData(result);
         setFromISO(now);
       } catch (e) {
-        setError("Erreur lors du calcul des apsides.");
+        setFailed(true);
         console.error(e);
       }
     });
@@ -183,10 +168,10 @@ export default function ApsidesApp() {
     );
   }
 
-  if (error) {
+  if (failed) {
     return (
       <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm text-red-400">
-        {error}
+        {t.apsides.error}
       </div>
     );
   }
@@ -203,31 +188,30 @@ export default function ApsidesApp() {
       className={`flex flex-col gap-8 transition-opacity ${isPending ? "opacity-50" : ""}`}
     >
       <section className="rounded-2xl border border-white/8 bg-white/3 px-5 py-4 text-sm text-white/55">
-        Une <strong className="text-white">apside</strong> est le point
-        d&apos;une orbite le plus proche ou le plus éloigné du corps autour
-        duquel on tourne. Ces dates sont identiques partout sur Terre : elles ne
-        dépendent pas de l&apos;emplacement choisi.
+        {t.apsides.introBefore}
+        <strong className="text-white">{t.apsides.introStrong}</strong>
+        {t.apsides.introAfter}
       </section>
 
       {/* Moon */}
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-semibold uppercase tracking-widest text-white/40">
-          Lune · périgée &amp; apogée
+          {t.apsides.moonSection}
         </h2>
         {nextPerigee && nextApogee && (
           <>
             <OrbitScene
-              centerName="Terre"
+              centerName={t.apsides.bodies.earth}
               centerColor="#3b82f6"
-              bodyName="Lune"
+              bodyName={t.apsides.bodies.moon}
               bodyColor="#d4d4d8"
               periapsis={{
-                name: "Périgée",
+                name: t.apsides.types.perigee,
                 km: nextPerigee.distanceKm,
                 color: APSIS_COLORS.perigee,
               }}
               apoapsis={{
-                name: "Apogée",
+                name: t.apsides.types.apogee,
                 km: nextApogee.distanceKm,
                 color: APSIS_COLORS.apogee,
               }}
@@ -237,7 +221,7 @@ export default function ApsidesApp() {
             <SceneCaption
               periKm={nextPerigee.distanceKm}
               apoKm={nextApogee.distanceKm}
-              bodyName="la Lune"
+              bodyName={t.apsides.bodiesInSentence.moon}
               atISO={data.lunarNow.atISO}
             />
           </>
@@ -253,31 +237,32 @@ export default function ApsidesApp() {
           ))}
         </ul>
         <p className="text-xs text-white/25">
-          Distance entre les centres de la Terre et de la Lune, qui varie
-          d&apos;environ {formatKm(MOON_DISTANCE_RANGE_KM.min)} à{" "}
-          {formatKm(MOON_DISTANCE_RANGE_KM.max)}.
+          {t.apsides.moonRange(
+            fmt.km(MOON_DISTANCE_RANGE_KM.min),
+            fmt.km(MOON_DISTANCE_RANGE_KM.max),
+          )}
         </p>
       </section>
 
       {/* Sun */}
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-semibold uppercase tracking-widest text-white/40">
-          Soleil · périhélie &amp; aphélie
+          {t.apsides.sunSection}
         </h2>
         {nextPerihelion && nextAphelion && (
           <>
             <OrbitScene
-              centerName="Soleil"
+              centerName={t.apsides.bodies.sun}
               centerColor="#fde68a"
-              bodyName="Terre"
+              bodyName={t.apsides.bodies.earth}
               bodyColor="#3b82f6"
               periapsis={{
-                name: "Périhélie",
+                name: t.apsides.types.perihelion,
                 km: nextPerihelion.distanceKm,
                 color: APSIS_COLORS.perihelion,
               }}
               apoapsis={{
-                name: "Aphélie",
+                name: t.apsides.types.aphelion,
                 km: nextAphelion.distanceKm,
                 color: APSIS_COLORS.aphelion,
               }}
@@ -287,7 +272,7 @@ export default function ApsidesApp() {
             <SceneCaption
               periKm={nextPerihelion.distanceKm}
               apoKm={nextAphelion.distanceKm}
-              bodyName="la Terre"
+              bodyName={t.apsides.bodiesInSentence.earth}
               atISO={data.solarNow.atISO}
             />
           </>
@@ -303,18 +288,11 @@ export default function ApsidesApp() {
             />
           ))}
         </ul>
-        <p className="text-xs text-white/25">
-          Vue héliocentrique : le Soleil occupe le foyer de l&apos;orbite, la
-          Terre est placée à sa position réelle, et le segment entre les deux
-          donne donc la direction réelle du Soleil. L&apos;écart entre périhélie
-          et aphélie représente environ 3 % de la distance moyenne.
-        </p>
+        <p className="text-xs text-white/25">{t.apsides.sunNote}</p>
       </section>
 
       <p className="pt-1 text-center text-xs text-white/25">
-        Calculs basés sur les éphémérides VSOP87 / ELP2000 via astronomy-engine
-        · heures dans votre fuseau (
-        {Intl.DateTimeFormat().resolvedOptions().timeZone})
+        {t.apsides.credit(Intl.DateTimeFormat().resolvedOptions().timeZone)}
       </p>
     </div>
   );

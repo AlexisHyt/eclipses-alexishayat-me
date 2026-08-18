@@ -1,6 +1,7 @@
 "use client";
 
 import { useId } from "react";
+import { useI18n } from "@/app/i18n/context";
 import type { SunRegime } from "@/lib/sun";
 
 interface Props {
@@ -44,6 +45,7 @@ export default function SunArc({
   nowISO,
   regime,
 }: Props) {
+  const { t } = useI18n();
   const id = useId();
   const glowId = `sun-glow-${id}`;
   const fillId = `sun-fill-${id}`;
@@ -68,9 +70,9 @@ export default function SunArc({
       viewBox="0 0 320 120"
       className="w-full"
       role="img"
-      aria-label="Course du Soleil au-dessus de l'horizon"
+      aria-label={t.sun.arcLabel}
     >
-      <title>Course du Soleil au-dessus de l&apos;horizon</title>
+      <title>{t.sun.arcLabel}</title>
       <defs>
         <radialGradient id={glowId}>
           <stop offset="0%" stopColor="#fde68a" />
@@ -142,7 +144,7 @@ export default function SunArc({
         fill="rgba(255,255,255,0.35)"
         fontSize={9}
       >
-        Lever
+        {t.sun.rise}
       </text>
       <text
         x={CENTER}
@@ -151,7 +153,7 @@ export default function SunArc({
         fill="rgba(255,255,255,0.35)"
         fontSize={9}
       >
-        Culmination
+        {t.sun.culmination}
       </text>
       <text
         x={RIGHT}
@@ -160,7 +162,7 @@ export default function SunArc({
         fill="rgba(255,255,255,0.35)"
         fontSize={9}
       >
-        Coucher
+        {t.sun.set}
       </text>
     </svg>
   );

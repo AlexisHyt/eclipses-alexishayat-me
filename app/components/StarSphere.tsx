@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
+import { useI18n } from "@/app/i18n/context";
+import type { Dictionary } from "@/app/i18n/dictionaries";
 import type { ConstellationLines } from "@/lib/constellations";
 import type { Matrix3 } from "@/lib/sidereal";
 import type { SkyBody, SkyBodyId } from "@/lib/sky";
@@ -47,22 +49,17 @@ const DESATURATION = 0.35;
 /** Even Venus and the Moon have to stop growing somewhere. */
 const MAX_POINT_SIZE = 12;
 
-const CARDINALS: { label: string; east: number; south: number }[] = [
-  { label: "N", east: 0, south: -1 },
-  { label: "E", east: 1, south: 0 },
-  { label: "S", east: 0, south: 1 },
-  { label: "O", east: -1, south: 0 },
+/** Where each cardinal point sits on the horizon; its name comes from the dictionary. */
+const CARDINALS: {
+  key: keyof Dictionary["night"]["cardinals"];
+  east: number;
+  south: number;
+}[] = [
+  { key: "north", east: 0, south: -1 },
+  { key: "east", east: 1, south: 0 },
+  { key: "south", east: 0, south: 1 },
+  { key: "west", east: -1, south: 0 },
 ];
-
-const BODY_NAMES: Record<SkyBodyId, string> = {
-  moon: "Lune",
-  mercury: "Mercure",
-  venus: "Vénus",
-  mars: "Mars",
-  jupiter: "Jupiter",
-  saturn: "Saturne",
-  uranus: "Uranus",
-};
 
 const BODY_COLOURS: Record<SkyBodyId, string> = {
   moon: "#e8e6df",
@@ -400,9 +397,13 @@ export default function StarSphere({
   bodies,
   showConstellations,
 }: Props) {
+  const { t } = useI18n();
   const containerRef = useRef<HTMLDivElement>(null);
   const handlesRef = useRef<SkyHandles | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  // The 3D labels are baked into the scene, so it is rebuilt on a language change.
+  const labels = t.night;
 
   // Read inside the async build, which may finish after the slider has moved.
   const stateRef = useRef({ siderealHours, nightFraction, showConstellations });
@@ -515,7 +516,7 @@ export default function StarSphere({
         const bodyLabels = bodies.map((body) =>
           addLabel(
             equatorial,
-            BODY_NAMES[body.id],
+            labels.bodies[body.id],
             new THREE.Vector3(),
             `font-size:11px;letter-spacing:0.04em;font-weight:600;color:${BODY_COLOURS[body.id]}`,
             [0.5, -0.4],
@@ -570,7 +571,7 @@ export default function StarSphere({
 
         for (const cardinal of CARDINALS) {
           const label = makeLabel(
-            cardinal.label,
+            labels.cardinals[cardinal.key],
             "font-size:11px;font-weight:600;letter-spacing:0.08em;color:rgba(199,210,254,0.7)",
           );
           label.position.set(
@@ -661,7 +662,7 @@ export default function StarSphere({
       })
       .catch((cause) => {
         console.error(cause);
-        setError("Impossible de charger les données du ciel.");
+        setFailed(true);
       });
 
     return () => {
@@ -669,7 +670,7 @@ export default function StarSphere({
       handlesRef.current = null;
       dispose?.();
     };
-  }, [latitude, precession, bodies]);
+  }, [latitude, precession, bodies, labels]);
 
   // Advancing through the night is a rotation about the celestial pole…
   useEffect(() => {
@@ -685,10 +686,10 @@ export default function StarSphere({
     handlesRef.current?.setConstellationsVisible(showConstellations);
   }, [showConstellations]);
 
-  if (error !== null) {
+  if (failed) {
     return (
       <div className="flex h-80 items-center justify-center rounded-2xl border border-white/8 bg-white/3 px-5 text-center text-sm text-white/40 sm:h-[28rem]">
-        {error}
+        {t.night.sphereError}
       </div>
     );
   }

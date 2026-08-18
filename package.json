@@ -16,6 +16,7 @@
     "check:apsides": "bun run scripts/check-apsides.ts",
     "check:sky": "bun run scripts/check-sky.ts",
     "build:stars": "bun run scripts/build-stars.ts",
+    "build:icons": "bun run scripts/build-icons.ts",
     "build:constellations": "bun run scripts/build-constellations.ts"
   },
   "dependencies": {

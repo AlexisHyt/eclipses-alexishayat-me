@@ -1,6 +1,7 @@
 "use client";
 
 import { useId } from "react";
+import { useI18n } from "@/app/i18n/context";
 
 interface Props {
   /** Fraction 0–1 of the disc that is lit */
@@ -48,9 +49,11 @@ export default function MoonDisc({
   size = 96,
   className = "",
 }: Props) {
+  const { t } = useI18n();
   const id = useId();
   const clipId = `moon-lit-${id}`;
   const gradientId = `moon-glow-${id}`;
+  const label = t.moon.discLabel(Math.round(illumination * 100));
 
   return (
     <svg
@@ -59,9 +62,9 @@ export default function MoonDisc({
       height={size}
       className={className}
       role="img"
-      aria-label={`Lune éclairée à ${Math.round(illumination * 100)} %`}
+      aria-label={label}
     >
-      <title>{`Lune éclairée à ${Math.round(illumination * 100)} %`}</title>
+      <title>{label}</title>
       <defs>
         <radialGradient id={gradientId} cx="38%" cy="32%" r="75%">
           <stop offset="0%" stopColor="#fdfbf3" />

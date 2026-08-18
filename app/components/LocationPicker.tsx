@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useI18n } from "@/app/i18n/context";
 
 export interface Location {
   lat: number;
@@ -35,6 +36,7 @@ export default function LocationPicker({
   onLocationChange,
   currentLocation,
 }: Props) {
+  const { locale, t } = useI18n();
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<NominatimResult[]>([]);
   const [loadingGeo, setLoadingGeo] = useState(false);
@@ -57,26 +59,29 @@ export default function LocationPicker({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const searchNominatim = useCallback(async (q: string) => {
-    if (q.trim().length < 2) {
-      setSuggestions([]);
-      return;
-    }
-    setLoadingSuggestions(true);
-    try {
-      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=5&accept-language=fr&addressdetails=1`;
-      const res = await fetch(url, {
-        headers: { "Accept-Language": "fr" },
-      });
-      const data: NominatimResult[] = await res.json();
-      setSuggestions(data);
-      setShowSuggestions(true);
-    } catch {
-      setSuggestions([]);
-    } finally {
-      setLoadingSuggestions(false);
-    }
-  }, []);
+  const searchNominatim = useCallback(
+    async (q: string) => {
+      if (q.trim().length < 2) {
+        setSuggestions([]);
+        return;
+      }
+      setLoadingSuggestions(true);
+      try {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=5&accept-language=${locale}&addressdetails=1`;
+        const res = await fetch(url, {
+          headers: { "Accept-Language": locale },
+        });
+        const data: NominatimResult[] = await res.json();
+        setSuggestions(data);
+        setShowSuggestions(true);
+      } catch {
+        setSuggestions([]);
+      } finally {
+        setLoadingSuggestions(false);
+      }
+    },
+    [locale],
+  );
 
   function handleQueryChange(e: React.ChangeEvent<HTMLInputElement>) {
     const val = e.target.value;
@@ -127,7 +132,7 @@ export default function LocationPicker({
         // Reverse geocode
         try {
           const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10&accept-language=fr&addressdetails=1`,
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10&accept-language=${locale}&addressdetails=1`,
           );
           const data = (await res.json()) as NominatimResult;
           const cityLabel = extractCityLabel(data);
@@ -158,7 +163,7 @@ export default function LocationPicker({
             value={query}
             onChange={handleQueryChange}
             onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-            placeholder="Rechercher une ville ou une adresse…"
+            placeholder={t.location.placeholder}
             className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-white/40 outline-none ring-0 transition focus:border-indigo-400/60 focus:bg-white/8 focus:ring-1 focus:ring-indigo-400/40"
           />
           {loadingSuggestions && (
@@ -189,7 +194,7 @@ export default function LocationPicker({
           type="button"
           onClick={handleUseMyPosition}
           disabled={loadingGeo}
-          title="Utiliser ma position"
+          title={t.location.useMyPosition}
           className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/80 transition hover:bg-white/10 hover:border-white/20 disabled:opacity-50"
         >
           {loadingGeo ? (
@@ -197,7 +202,7 @@ export default function LocationPicker({
           ) : (
             <span className="text-base">📍</span>
           )}
-          <span className="hidden sm:inline">Ma position</span>
+          <span className="hidden sm:inline">{t.location.myPosition}</span>
         </button>
       </div>
 

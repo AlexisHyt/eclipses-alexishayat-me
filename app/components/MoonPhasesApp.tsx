@@ -2,13 +2,8 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { fetchMoonWeek } from "@/app/actions/moon";
-import type { MoonPhaseKey, MoonQuarterKey, MoonWeek } from "@/lib/moon";
-import {
-  formatFullDate,
-  formatKm,
-  formatShortDate,
-  formatTime,
-} from "./formatters";
+import { useFormatters, useI18n } from "@/app/i18n/context";
+import type { MoonWeek } from "@/lib/moon";
 import type { Location } from "./LocationPicker";
 import MoonDisc from "./MoonDisc";
 
@@ -16,31 +11,15 @@ interface Props {
   location: Location | null;
 }
 
-const PHASE_LABELS: Record<MoonPhaseKey, string> = {
-  new: "Nouvelle Lune",
-  "waxing-crescent": "Premier croissant",
-  "first-quarter": "Premier quartier",
-  "waxing-gibbous": "Gibbeuse croissante",
-  full: "Pleine Lune",
-  "waning-gibbous": "Gibbeuse décroissante",
-  "last-quarter": "Dernier quartier",
-  "waning-crescent": "Dernier croissant",
-};
-
-const QUARTER_LABELS: Record<MoonQuarterKey, string> = {
-  new: "Nouvelle Lune",
-  "first-quarter": "Premier quartier",
-  full: "Pleine Lune",
-  "last-quarter": "Dernier quartier",
-};
-
 function isWaxing(phaseAngle: number) {
   return phaseAngle < 180;
 }
 
 export default function MoonPhasesApp({ location }: Props) {
+  const { t } = useI18n();
+  const fmt = useFormatters();
   const [week, setWeek] = useState<MoonWeek | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const lat = location?.lat ?? null;
@@ -51,7 +30,7 @@ export default function MoonPhasesApp({ location }: Props) {
     // Local midnight, so the week matches the visitor's own calendar days.
     const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    setError(null);
+    setFailed(false);
     startTransition(async () => {
       try {
         const data = await fetchMoonWeek(
@@ -62,7 +41,7 @@ export default function MoonPhasesApp({ location }: Props) {
         );
         setWeek(data);
       } catch (e) {
-        setError("Erreur lors du calcul des phases de la Lune.");
+        setFailed(true);
         console.error(e);
       }
     });
@@ -77,10 +56,10 @@ export default function MoonPhasesApp({ location }: Props) {
     );
   }
 
-  if (error) {
+  if (failed) {
     return (
       <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm text-red-400">
-        {error}
+        {t.moon.error}
       </div>
     );
   }
@@ -97,7 +76,7 @@ export default function MoonPhasesApp({ location }: Props) {
       {/* Current phase */}
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-semibold uppercase tracking-widest text-white/40">
-          Phase actuelle
+          {t.moon.currentPhase}
         </h2>
         <article className="flex flex-col items-center gap-5 rounded-2xl border border-white/8 bg-white/3 px-5 py-6 sm:flex-row sm:items-center sm:gap-7">
           <MoonDisc
@@ -109,29 +88,29 @@ export default function MoonPhasesApp({ location }: Props) {
           <div className="flex flex-1 flex-col gap-3 text-center sm:text-left">
             <div>
               <p className="text-xl font-semibold text-white">
-                {PHASE_LABELS[current.phase]}
+                {t.moon.phases[current.phase]}
               </p>
               <p className="text-sm capitalize text-white/45">
-                {formatFullDate(current.atISO)}
+                {fmt.fullDate(current.atISO)}
               </p>
             </div>
             <dl className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-3">
               <div className="rounded-lg bg-white/4 px-3 py-2">
-                <dt className="mb-0.5 text-white/40">Illumination</dt>
+                <dt className="mb-0.5 text-white/40">{t.moon.illumination}</dt>
                 <dd className="font-mono text-white/80">
                   {(current.illumination * 100).toFixed(1)} %
                 </dd>
               </div>
               <div className="rounded-lg bg-white/4 px-3 py-2">
-                <dt className="mb-0.5 text-white/40">Âge</dt>
+                <dt className="mb-0.5 text-white/40">{t.moon.age}</dt>
                 <dd className="font-mono text-white/80">
-                  {current.ageDays.toFixed(1)} j
+                  {current.ageDays.toFixed(1)} {t.moon.ageUnit}
                 </dd>
               </div>
               <div className="rounded-lg bg-white/4 px-3 py-2">
-                <dt className="mb-0.5 text-white/40">Distance</dt>
+                <dt className="mb-0.5 text-white/40">{t.moon.distance}</dt>
                 <dd className="font-mono text-white/80">
-                  {formatKm(current.distanceKm)}
+                  {fmt.km(current.distanceKm)}
                 </dd>
               </div>
             </dl>
@@ -139,18 +118,18 @@ export default function MoonPhasesApp({ location }: Props) {
               <p className="text-xs text-white/45">
                 {today.riseISO && (
                   <>
-                    🌘 Lever :{" "}
+                    🌘 {t.moon.rise} :{" "}
                     <span className="font-mono text-white/70">
-                      {formatTime(today.riseISO)}
+                      {fmt.time(today.riseISO)}
                     </span>
                   </>
                 )}
                 {today.riseISO && today.setISO && " · "}
                 {today.setISO && (
                   <>
-                    🌒 Coucher :{" "}
+                    🌒 {t.moon.set} :{" "}
                     <span className="font-mono text-white/70">
-                      {formatTime(today.setISO)}
+                      {fmt.time(today.setISO)}
                     </span>
                   </>
                 )}
@@ -163,7 +142,7 @@ export default function MoonPhasesApp({ location }: Props) {
       {/* Week */}
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-semibold uppercase tracking-widest text-white/40">
-          Les 7 prochains jours
+          {t.moon.week}
         </h2>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
           {days.map((day, i) => (
@@ -172,7 +151,7 @@ export default function MoonPhasesApp({ location }: Props) {
               className="flex flex-col items-center gap-2 rounded-2xl border border-white/8 bg-white/3 px-3 py-4 text-center transition hover:border-white/15"
             >
               <span className="text-[11px] font-medium capitalize text-white/50">
-                {i === 0 ? "Aujourd'hui" : formatShortDate(day.dayStartISO)}
+                {i === 0 ? t.moon.today : fmt.shortDate(day.dayStartISO)}
               </span>
               <MoonDisc
                 illumination={day.illumination}
@@ -183,12 +162,12 @@ export default function MoonPhasesApp({ location }: Props) {
                 {Math.round(day.illumination * 100)} %
               </span>
               <span className="text-[11px] leading-tight text-white/40">
-                {PHASE_LABELS[day.phase]}
+                {t.moon.phases[day.phase]}
               </span>
               {week.hasObserver && (
                 <span className="text-[10px] font-mono leading-tight text-white/30">
-                  {day.riseISO ? formatTime(day.riseISO) : "—"} ·{" "}
-                  {day.setISO ? formatTime(day.setISO) : "—"}
+                  {day.riseISO ? fmt.time(day.riseISO) : "—"} ·{" "}
+                  {day.setISO ? fmt.time(day.setISO) : "—"}
                 </span>
               )}
             </article>
@@ -196,14 +175,12 @@ export default function MoonPhasesApp({ location }: Props) {
         </div>
         {week.hasObserver ? (
           <p className="text-xs text-white/30">
-            Sous chaque jour : heure de lever · heure de coucher de la Lune pour
-            {location ? ` ${location.label}` : " votre emplacement"}.
+            {t.moon.riseSetNote(
+              location ? location.label : t.moon.yourLocation,
+            )}
           </p>
         ) : (
-          <p className="text-xs text-white/30">
-            Sélectionnez un emplacement pour afficher les heures de lever et de
-            coucher de la Lune.
-          </p>
+          <p className="text-xs text-white/30">{t.moon.pickLocation}</p>
         )}
       </section>
 
@@ -211,7 +188,7 @@ export default function MoonPhasesApp({ location }: Props) {
       {quarters.length > 0 && (
         <section className="flex flex-col gap-3">
           <h2 className="text-sm font-semibold uppercase tracking-widest text-white/40">
-            Phases principales de la semaine
+            {t.moon.quarters}
           </h2>
           <ul className="flex flex-col gap-2">
             {quarters.map((q) => (
@@ -220,15 +197,13 @@ export default function MoonPhasesApp({ location }: Props) {
                 className="flex items-center justify-between gap-3 rounded-xl border border-white/8 bg-white/3 px-4 py-3 text-sm"
               >
                 <span className="text-white/85">
-                  {QUARTER_LABELS[q.quarter]}
+                  {t.moon.quarterNames[q.quarter]}
                 </span>
                 <span className="text-xs text-white/50">
-                  <span className="capitalize">
-                    {formatFullDate(q.timeISO)}
-                  </span>{" "}
+                  <span className="capitalize">{fmt.fullDate(q.timeISO)}</span>{" "}
                   ·{" "}
                   <span className="font-mono text-white/70">
-                    {formatTime(q.timeISO)}
+                    {fmt.time(q.timeISO)}
                   </span>
                 </span>
               </li>
@@ -238,8 +213,7 @@ export default function MoonPhasesApp({ location }: Props) {
       )}
 
       <p className="pt-1 text-center text-xs text-white/25">
-        Phases calculées avec astronomy-engine · heures dans votre fuseau (
-        {Intl.DateTimeFormat().resolvedOptions().timeZone})
+        {t.moon.credit(Intl.DateTimeFormat().resolvedOptions().timeZone)}
       </p>
     </div>
   );

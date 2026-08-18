@@ -6,6 +6,7 @@ import {
   fetchEclipsesForLocation,
   fetchGlobalTotalEclipsesPage,
 } from "@/app/actions/eclipses";
+import { useI18n } from "@/app/i18n/context";
 import EclipseCard from "./EclipseCard";
 import type { Location } from "./LocationPicker";
 
@@ -18,6 +19,7 @@ interface Props {
 const GLOBAL_PAGE_SIZE = 10;
 
 export default function EclipsesApp({ location }: Props) {
+  const { t } = useI18n();
   const [mode, setMode] = useState<ViewMode>("local");
   const [localEclipses, setLocalEclipses] = useState<EclipseWithPath[] | null>(
     null,
@@ -27,7 +29,8 @@ export default function EclipsesApp({ location }: Props) {
     null,
   );
   const [hasLoadedGlobal, setHasLoadedGlobal] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Keyed rather than stored as text, so a language switch retranslates it.
+  const [errorKey, setErrorKey] = useState<"local" | "global" | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const eclipses = mode === "local" ? localEclipses : globalEclipses;
@@ -43,13 +46,13 @@ export default function EclipsesApp({ location }: Props) {
       return;
     }
 
-    setError(null);
+    setErrorKey(null);
     startTransition(async () => {
       try {
         const data = await fetchEclipsesForLocation(lat, lng);
         setLocalEclipses(data);
       } catch (e) {
-        setError("Erreur lors du calcul des éclipses. Veuillez réessayer.");
+        setErrorKey("local");
         console.error(e);
       }
     });
@@ -66,14 +69,14 @@ export default function EclipsesApp({ location }: Props) {
 
   function handleModeChange(nextMode: ViewMode) {
     setMode(nextMode);
-    setError(null);
+    setErrorKey(null);
 
     if (nextMode === "global" && !hasLoadedGlobal) {
       startTransition(async () => {
         try {
           await loadGlobalEclipses(null, false);
         } catch (e) {
-          setError("Erreur lors du chargement des éclipses mondiales.");
+          setErrorKey("global");
           console.error(e);
         }
       });
@@ -83,12 +86,12 @@ export default function EclipsesApp({ location }: Props) {
   function handleLoadMore() {
     if (globalNextCursorISO === null) return;
 
-    setError(null);
+    setErrorKey(null);
     startTransition(async () => {
       try {
         await loadGlobalEclipses(globalNextCursorISO, true);
       } catch (e) {
-        setError("Erreur lors du chargement des éclipses mondiales.");
+        setErrorKey("global");
         console.error(e);
       }
     });
@@ -98,7 +101,7 @@ export default function EclipsesApp({ location }: Props) {
     <div className="flex flex-col gap-8">
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-semibold uppercase tracking-widest text-white/40">
-          Mode d&apos;exploration
+          {t.eclipses.modeTitle}
         </h2>
         <div className="inline-flex w-full rounded-2xl border border-white/10 bg-white/4 p-1 sm:w-auto">
           <button
@@ -110,7 +113,7 @@ export default function EclipsesApp({ location }: Props) {
                 : "text-white/65 hover:bg-white/6 hover:text-white"
             }`}
           >
-            Local
+            {t.eclipses.modeLocal}
           </button>
           <button
             type="button"
@@ -121,22 +124,22 @@ export default function EclipsesApp({ location }: Props) {
                 : "text-white/65 hover:bg-white/6 hover:text-white"
             }`}
           >
-            Monde · Totales
+            {t.eclipses.modeGlobal}
           </button>
         </div>
       </section>
 
       {mode === "global" && (
         <section className="rounded-2xl border border-white/8 bg-white/3 px-5 py-4 text-sm text-white/55">
-          Affiche les prochaines éclipses solaires{" "}
-          <strong className="text-white">totales</strong> partout dans le monde,
-          sans tenir compte de l&apos;emplacement choisi.
+          {t.eclipses.globalNoteBefore}
+          <strong className="text-white">{t.eclipses.globalNoteStrong}</strong>
+          {t.eclipses.globalNoteAfter}
         </section>
       )}
 
       {mode === "global" && hasLoadedGlobal && globalEclipses.length > 0 && (
         <div className="text-xs text-white/35">
-          Chargement progressif par lots de {GLOBAL_PAGE_SIZE} éclipses.
+          {t.eclipses.batchNote(GLOBAL_PAGE_SIZE)}
         </div>
       )}
 
@@ -153,9 +156,11 @@ export default function EclipsesApp({ location }: Props) {
         </div>
       )}
 
-      {!isPending && error && (
+      {!isPending && errorKey !== null && (
         <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm text-red-400">
-          {error}
+          {errorKey === "local"
+            ? t.eclipses.errorLocal
+            : t.eclipses.errorGlobal}
         </div>
       )}
 
@@ -164,9 +169,7 @@ export default function EclipsesApp({ location }: Props) {
         eclipses &&
         eclipses.length === 0 && (
           <div className="rounded-xl border border-white/8 bg-white/3 px-5 py-8 text-center text-sm text-white/40">
-            {mode === "local"
-              ? "Aucune éclipse solaire visible depuis cet emplacement dans les années à venir."
-              : "Aucune éclipse totale mondiale trouvée dans l'intervalle recherché."}
+            {mode === "local" ? t.eclipses.emptyLocal : t.eclipses.emptyGlobal}
           </div>
         )}
 
@@ -174,8 +177,8 @@ export default function EclipsesApp({ location }: Props) {
         <section className="flex flex-col gap-3">
           <h2 className="text-sm font-semibold uppercase tracking-widest text-white/40">
             {mode === "local"
-              ? `${eclipses.length} prochaine${eclipses.length > 1 ? "s" : ""} éclipse${eclipses.length > 1 ? "s" : ""} visible${eclipses.length > 1 ? "s" : ""}`
-              : `${eclipses.length} éclipse${eclipses.length > 1 ? "s" : ""} totale${eclipses.length > 1 ? "s" : ""} chargée${eclipses.length > 1 ? "s" : ""}`}
+              ? t.eclipses.countLocal(eclipses.length)
+              : t.eclipses.countGlobal(eclipses.length)}
           </h2>
           <div className="flex flex-col gap-2">
             {eclipses.map((e, i) => (
@@ -195,28 +198,29 @@ export default function EclipsesApp({ location }: Props) {
               disabled={isPending}
               className="mt-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/80 transition hover:bg-white/10 hover:border-white/20 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {isPending ? "Chargement…" : "Charger plus d'éclipses totales"}
+              {isPending ? t.eclipses.loading : t.eclipses.loadMore}
             </button>
           )}
           <p className="text-xs text-white/25 text-center pt-2">
-            Calculs basés sur les éphémérides VSOP87 via astronomy-engine ·
-            Précision ±1 minute
+            {t.eclipses.accuracy}
           </p>
         </section>
       )}
 
-      {!isPending && mode === "local" && !eclipses && !error && (
+      {!isPending && mode === "local" && !eclipses && errorKey === null && (
         <div className="rounded-xl border border-dashed border-white/10 px-5 py-10 text-center text-sm text-white/30">
-          Sélectionnez un emplacement pour voir les prochaines éclipses
-          solaires.
+          {t.eclipses.pickLocation}
         </div>
       )}
 
-      {!isPending && mode === "global" && !hasLoadedGlobal && !error && (
-        <div className="rounded-xl border border-dashed border-white/10 px-5 py-10 text-center text-sm text-white/30">
-          Chargez la vue mondiale pour explorer les prochaines éclipses totales.
-        </div>
-      )}
+      {!isPending &&
+        mode === "global" &&
+        !hasLoadedGlobal &&
+        errorKey === null && (
+          <div className="rounded-xl border border-dashed border-white/10 px-5 py-10 text-center text-sm text-white/30">
+            {t.eclipses.pickGlobal}
+          </div>
+        )}
     </div>
   );
 }

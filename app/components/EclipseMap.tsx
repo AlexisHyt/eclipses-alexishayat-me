@@ -3,6 +3,7 @@
 import L from "leaflet";
 import { useEffect, useRef } from "react";
 import "leaflet/dist/leaflet.css";
+import { useI18n } from "@/app/i18n/context";
 import type { PathPoint } from "@/lib/eclipse-path";
 import type { EclipseType } from "@/lib/eclipses";
 
@@ -68,8 +69,10 @@ export default function EclipseMap({
   maxLng,
   eclipseType,
 }: Props) {
+  const { t } = useI18n();
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
+  const positionLabel = t.eclipseCard.yourPosition;
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -142,7 +145,7 @@ export default function EclipseMap({
         iconAnchor: [5, 5],
       });
       L.marker(userPosition, { icon: userIcon })
-        .bindTooltip("Votre position", {
+        .bindTooltip(positionLabel, {
           direction: "top",
           className: "eclipse-tooltip",
         })
@@ -166,7 +169,15 @@ export default function EclipseMap({
       map.remove();
       mapRef.current = null;
     };
-  }, [userLat, userLng, pathPoints, maxLat, maxLng, eclipseType]);
+  }, [
+    userLat,
+    userLng,
+    pathPoints,
+    maxLat,
+    maxLng,
+    eclipseType,
+    positionLabel,
+  ]);
 
   return (
     <div

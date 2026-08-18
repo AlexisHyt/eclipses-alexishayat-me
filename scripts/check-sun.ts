@@ -88,7 +88,9 @@ async function main() {
           ? new Date(day.setISO).toLocaleTimeString("fr-FR")
           : "—",
         duree:
-          day.dayLengthSec !== null ? formatDurationHM(day.dayLengthSec) : "—",
+          day.dayLengthSec !== null
+            ? formatDurationHM(day.dayLengthSec, "fr")
+            : "—",
       })),
     );
   }

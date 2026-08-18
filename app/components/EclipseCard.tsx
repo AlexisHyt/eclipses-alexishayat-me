@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useState } from "react";
 import type { EclipseWithPath } from "@/app/actions/eclipses";
+import { useFormatters, useI18n } from "@/app/i18n/context";
 
 const EclipseMap = dynamic(() => import("./EclipseMap"), { ssr: false });
 
@@ -13,49 +14,11 @@ interface Props {
   userLng?: number | null;
 }
 
-const TYPE_LABELS: Record<string, string> = {
-  Total: "Totale",
-  Annular: "Annulaire",
-  Partial: "Partielle",
-};
-
 const TYPE_BADGE: Record<string, string> = {
   Total: "bg-red-500/20 text-red-400 border border-red-500/30",
   Annular: "bg-orange-500/20 text-orange-400 border border-orange-500/30",
   Partial: "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30",
 };
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("fr-FR", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
-
-function formatTime(iso: string) {
-  const date = new Date(iso);
-  const parts = new Intl.DateTimeFormat("fr-FR", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-    timeZoneName: "short",
-  }).formatToParts(date);
-
-  const hour = parts.find((part) => part.type === "hour")?.value ?? "--";
-  const minute = parts.find((part) => part.type === "minute")?.value ?? "--";
-  const tzStr = parts.find((part) => part.type === "timeZoneName")?.value ?? "";
-  const timeStr = `${hour}:${minute}`;
-  return `${timeStr} ${tzStr}`;
-}
-
-function formatDuration(minutes: number) {
-  if (minutes < 1) return `${Math.round(minutes * 60)} s`;
-  const m = Math.floor(minutes);
-  const s = Math.round((minutes - m) * 60);
-  return s > 0 ? `${m} min ${s} s` : `${m} min`;
-}
 
 function formatCoordinate(value: number, positive: string, negative: string) {
   const abs = Math.abs(value).toFixed(2);
@@ -68,6 +31,8 @@ export default function EclipseCard({
   userLat,
   userLng,
 }: Props) {
+  const { t } = useI18n();
+  const fmt = useFormatters();
   const [open, setOpen] = useState(false);
   const browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const obscurationPct =
@@ -98,39 +63,39 @@ export default function EclipseCard({
             <span
               className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${TYPE_BADGE[eclipse.type]}`}
             >
-              {TYPE_LABELS[eclipse.type] ?? eclipse.type}
+              {t.eclipseCard.types[eclipse.type] ?? eclipse.type}
             </span>
             <span className="text-sm font-medium text-white/90 capitalize">
-              {formatDate(eclipse.peakISO)}
+              {fmt.fullDate(eclipse.peakISO)}
             </span>
           </div>
 
           {/* Stats row */}
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-white/50">
             <span>
-              🌑 Pic :{" "}
+              🌑 {t.eclipseCard.peak} :{" "}
               <span className="text-white/70">
-                {formatTime(eclipse.peakISO)}
+                {fmt.timeWithZone(eclipse.peakISO)}
               </span>
             </span>
             {obscurationPct !== null && (
               <span>
-                ☀️ Obscuration :{" "}
+                ☀️ {t.eclipseCard.obscuration} :{" "}
                 <span className="text-white/70">{obscurationPct} %</span>
               </span>
             )}
             {eclipse.centralDurationMin !== null &&
               eclipse.centralDurationMin > 0 && (
                 <span>
-                  ⏱ Durée centrale :{" "}
+                  ⏱ {t.eclipseCard.centralDuration} :{" "}
                   <span className="text-white/70">
-                    {formatDuration(eclipse.centralDurationMin)}
+                    {fmt.durationMinutes(eclipse.centralDurationMin)}
                   </span>
                 </span>
               )}
             {eclipse.maxLat !== null && eclipse.maxLng !== null && (
               <span>
-                📍 Maximum :{" "}
+                📍 {t.eclipseCard.maximum} :{" "}
                 <span className="text-white/70">
                   {formatCoordinate(eclipse.maxLat, "N", "S")} ·{" "}
                   {formatCoordinate(eclipse.maxLng, "E", "W")}
@@ -163,44 +128,47 @@ export default function EclipseCard({
           {hasContactTimes && (
             <>
               <p className="text-xs text-white/35">
-                Heures affichées selon votre fuseau navigateur (
-                {browserTimeZone}), format 24 h.
+                {t.eclipseCard.timeZoneNote(browserTimeZone)}
               </p>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                 {eclipse.partialBeginISO && (
                   <div className="rounded-lg bg-white/4 px-3 py-2">
-                    <div className="text-white/40 mb-0.5">Début partiel</div>
+                    <div className="text-white/40 mb-0.5">
+                      {t.eclipseCard.partialBegin}
+                    </div>
                     <div className="text-white/80 font-mono">
-                      {formatTime(eclipse.partialBeginISO)}
+                      {fmt.timeWithZone(eclipse.partialBeginISO)}
                     </div>
                   </div>
                 )}
                 {eclipse.totalBeginISO && (
                   <div className="rounded-lg bg-white/4 px-3 py-2">
                     <div className="text-white/40 mb-0.5">
-                      Début {eclipse.type === "Total" ? "total" : "annulaire"}
+                      {t.eclipseCard.centralBegin(eclipse.type)}
                     </div>
                     <div className="text-white/80 font-mono">
-                      {formatTime(eclipse.totalBeginISO)}
+                      {fmt.timeWithZone(eclipse.totalBeginISO)}
                     </div>
                   </div>
                 )}
                 {eclipse.totalEndISO && (
                   <div className="rounded-lg bg-white/4 px-3 py-2">
                     <div className="text-white/40 mb-0.5">
-                      Fin {eclipse.type === "Total" ? "total" : "annulaire"}
+                      {t.eclipseCard.centralEnd(eclipse.type)}
                     </div>
                     <div className="text-white/80 font-mono">
-                      {formatTime(eclipse.totalEndISO)}
+                      {fmt.timeWithZone(eclipse.totalEndISO)}
                     </div>
                   </div>
                 )}
                 {eclipse.partialEndISO && (
                   <div className="rounded-lg bg-white/4 px-3 py-2">
-                    <div className="text-white/40 mb-0.5">Fin partiel</div>
+                    <div className="text-white/40 mb-0.5">
+                      {t.eclipseCard.partialEnd}
+                    </div>
                     <div className="text-white/80 font-mono">
-                      {formatTime(eclipse.partialEndISO)}
+                      {fmt.timeWithZone(eclipse.partialEndISO)}
                     </div>
                   </div>
                 )}
@@ -210,7 +178,7 @@ export default function EclipseCard({
 
           {eclipse.nasaPathStatus === "unavailable" ? (
             <div className="rounded-lg border border-rose-400/30 bg-rose-500/10 px-4 py-6 text-center text-sm text-rose-200">
-              Impossible de contacter les serveurs de la NASA
+              {t.eclipseCard.nasaUnreachable}
             </div>
           ) : (
             <>
@@ -225,15 +193,17 @@ export default function EclipseCard({
               />
               {eclipse.nasaPathStatus === "not-found" && (
                 <p className="text-[11px] text-white/35 text-center">
-                  Trajectoire centrale NASA non disponible pour cette éclipse.
+                  {t.eclipseCard.nasaPathMissing}
                 </p>
               )}
             </>
           )}
 
           <p className="text-[10px] text-white/25 text-right">
-            {hasUserLocation ? "Heures locales" : "Vue mondiale"} · Trajectoire
-            source NASA (quand disponible)
+            {hasUserLocation
+              ? t.eclipseCard.localTimes
+              : t.eclipseCard.globalView}{" "}
+            · {t.eclipseCard.nasaSource}
           </p>
         </div>
       )}
