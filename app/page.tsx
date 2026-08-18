@@ -18,7 +18,7 @@ export default function Home() {
                 Sky
               </h1>
               <p className="text-sm text-white/50">
-                Éclipses, Lune et Soleil, depuis chez vous
+                Le ciel, depuis chez vous
               </p>
             </div>
           </div>
