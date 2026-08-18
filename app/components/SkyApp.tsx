@@ -50,7 +50,7 @@ export default function SkyApp() {
             aria-selected={tab === t.id}
             aria-controls={`panel-${t.id}`}
             onClick={() => setTab(t.id)}
-            className={`-mb-px flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium whitespace-nowrap transition ${
+            className={`-mb-px flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium whitespace-nowrap cursor-pointer transition ${
               tab === t.id
                 ? "border-indigo-400 text-white"
                 : "border-transparent text-white/50 hover:text-white/80"
