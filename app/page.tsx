@@ -1,4 +1,4 @@
-import EclipsesApp from "./components/EclipsesApp";
+import SkyApp from "./components/SkyApp";
 
 export default function Home() {
   return (
@@ -6,30 +6,30 @@ export default function Home() {
       {/* Stars background */}
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_at_top,_#1a1040_0%,_#07070f_70%)]" />
 
-      <main className="relative z-10 flex w-full max-w-2xl flex-col gap-10 px-4 py-12 sm:px-6">
+      <main className="relative z-10 flex w-full max-w-4xl flex-col gap-10 px-4 py-12 sm:px-6">
         {/* Hero */}
         <header className="flex flex-col gap-3">
           <div className="flex items-center gap-3">
             <span className="text-4xl" aria-hidden>
-              🌑
+              🌌
             </span>
             <div>
               <h1 className="text-2xl font-bold tracking-tight text-white">
-                Éclipses solaires
+                Sky
               </h1>
               <p className="text-sm text-white/50">
-                En local ou les prochaines totales dans le monde
+                Éclipses, Lune et Soleil, depuis chez vous
               </p>
             </div>
           </div>
         </header>
 
         {/* App */}
-        <EclipsesApp />
+        <SkyApp />
       </main>
 
       <footer className="relative z-10 pb-6 text-center text-xs text-white/20">
-        eclipses.alexishayat.me · Données calculées via{" "}
+        sky.alexishayat.me · Données calculées via{" "}
         <a
           href="https://github.com/cosinekitty/astronomy"
           target="_blank"

@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Éclipses solaires",
+  title: "Sky",
   description:
-    "Découvrez les prochaines éclipses solaires visibles depuis votre position et les prochaines éclipses totales dans le monde, calculées en temps réel.",
+    "Sky réunit les prochaines éclipses solaires visibles depuis votre position, les phases de la Lune, le lever et le coucher du Soleil, ainsi que les prochains périgées et périhélies, calculés en temps réel.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

@@ -1,21 +1,24 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import {
   type EclipseWithPath,
   fetchEclipsesForLocation,
   fetchGlobalTotalEclipsesPage,
 } from "@/app/actions/eclipses";
 import EclipseCard from "./EclipseCard";
-import LocationPicker, { type Location } from "./LocationPicker";
+import type { Location } from "./LocationPicker";
 
 type ViewMode = "local" | "global";
 
+interface Props {
+  location: Location | null;
+}
+
 const GLOBAL_PAGE_SIZE = 10;
 
-export default function EclipsesApp() {
+export default function EclipsesApp({ location }: Props) {
   const [mode, setMode] = useState<ViewMode>("local");
-  const [location, setLocation] = useState<Location | null>(null);
   const [localEclipses, setLocalEclipses] = useState<EclipseWithPath[] | null>(
     null,
   );
@@ -31,6 +34,27 @@ export default function EclipsesApp() {
   const hasResolvedResults =
     mode === "local" ? localEclipses !== null : hasLoadedGlobal;
 
+  const lat = location?.lat ?? null;
+  const lng = location?.lng ?? null;
+
+  useEffect(() => {
+    if (lat === null || lng === null) {
+      setLocalEclipses(null);
+      return;
+    }
+
+    setError(null);
+    startTransition(async () => {
+      try {
+        const data = await fetchEclipsesForLocation(lat, lng);
+        setLocalEclipses(data);
+      } catch (e) {
+        setError("Erreur lors du calcul des éclipses. Veuillez réessayer.");
+        console.error(e);
+      }
+    });
+  }, [lat, lng]);
+
   async function loadGlobalEclipses(afterISO: string | null, append: boolean) {
     const page = await fetchGlobalTotalEclipsesPage(afterISO, GLOBAL_PAGE_SIZE);
     setGlobalNextCursorISO(page.nextCursorISO);
@@ -38,20 +62,6 @@ export default function EclipsesApp() {
     setGlobalEclipses((current) =>
       append ? [...current, ...page.eclipses] : page.eclipses,
     );
-  }
-
-  function handleLocationChange(loc: Location) {
-    setLocation(loc);
-    setError(null);
-    startTransition(async () => {
-      try {
-        const data = await fetchEclipsesForLocation(loc.lat, loc.lng);
-        setLocalEclipses(data);
-      } catch (e) {
-        setError("Erreur lors du calcul des éclipses. Veuillez réessayer.");
-        console.error(e);
-      }
-    });
   }
 
   function handleModeChange(nextMode: ViewMode) {
@@ -116,21 +126,11 @@ export default function EclipsesApp() {
         </div>
       </section>
 
-      {mode === "local" ? (
-        <section className="flex flex-col gap-3">
-          <h2 className="text-sm font-semibold uppercase tracking-widest text-white/40">
-            Votre emplacement
-          </h2>
-          <LocationPicker
-            onLocationChange={handleLocationChange}
-            currentLocation={location}
-          />
-        </section>
-      ) : (
+      {mode === "global" && (
         <section className="rounded-2xl border border-white/8 bg-white/3 px-5 py-4 text-sm text-white/55">
           Affiche les prochaines éclipses solaires{" "}
-          <strong className="text-white">totales</strong>
-          {" "}partout dans le monde, sans sélectionner de ville.
+          <strong className="text-white">totales</strong> partout dans le monde,
+          sans tenir compte de l&apos;emplacement choisi.
         </section>
       )}
 
@@ -183,8 +183,8 @@ export default function EclipsesApp() {
                 key={`${mode}-${e.peakISO}`}
                 eclipse={e}
                 index={i}
-                userLat={mode === "local" ? (location?.lat ?? null) : null}
-                userLng={mode === "local" ? (location?.lng ?? null) : null}
+                userLat={mode === "local" ? lat : null}
+                userLng={mode === "local" ? lng : null}
               />
             ))}
           </div>

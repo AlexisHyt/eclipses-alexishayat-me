@@ -1,6 +1,6 @@
 {
-  "name": "eclipses.alexishayat.me",
-  "version": "0.1.0",
+  "name": "sky.alexishayat.me",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -10,7 +10,13 @@
     "format": "biome format --write",
     "check:eclipses": "bun run scripts/check-eclipses.ts",
     "check:eclipses:global": "bun run scripts/check-global-eclipses.ts",
-    "check:nasa": "bun run scripts/check-nasa-path.ts"
+    "check:nasa": "bun run scripts/check-nasa-path.ts",
+    "check:moon": "bun run scripts/check-moon.ts",
+    "check:sun": "bun run scripts/check-sun.ts",
+    "check:apsides": "bun run scripts/check-apsides.ts",
+    "check:sky": "bun run scripts/check-sky.ts",
+    "build:stars": "bun run scripts/build-stars.ts",
+    "build:constellations": "bun run scripts/build-constellations.ts"
   },
   "dependencies": {
     "astronomy-engine": "^2.1.19",
@@ -18,7 +24,8 @@
     "next": "16.3.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "react-leaflet": "^5.0.0"
+    "react-leaflet": "^5.0.0",
+    "three": "^0.185.1"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.2",
@@ -27,6 +34,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/three": "^0.185.4",
     "tailwindcss": "^4",
     "typescript": "^5"
   },
