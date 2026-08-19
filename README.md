@@ -9,7 +9,7 @@ Application Next.js 16 qui rassemble plusieurs outils d'observation du ciel, org
 - **Astronomy Picture of the Day** de la NASA, récupérée via `api.nasa.gov`
 - image cliquable vers sa version d'origine, lien vers la **haute résolution** quand la NASA en publie une
 - titre, date, auteur ou mention de domaine public, et explication intégrale
-- prise en charge des jours où l'APOD est une **vidéo** : vignette, badge et lien de lecture
+- prise en charge des jours où l'APOD est une **vidéo** : les fichiers `.mp4` publiés par la NASA sont lus directement dans la page, les vidéos hébergées ailleurs (YouTube, Vimeo) sont représentées par leur vignette, un badge et un lien de lecture
 - onglet d'accueil, indépendant de l'emplacement
 - clé d'API lue côté serveur, jamais exposée au navigateur
 
@@ -175,7 +175,8 @@ bun run build
 
 - Chaque domaine a sa bibliothèque de calcul : `lib/eclipses.ts`, `lib/moon.ts`, `lib/sun.ts`, `lib/apsides.ts`, `lib/transits.ts` et `lib/weather.ts`.
 - La photo du jour est récupérée par une Server Action, mise en cache une heure : la clé NASA reste sur le serveur et une poignée d'appels suffit pour tous les visiteurs.
-- Les jours où l'APOD est une vidéo, le paramètre `thumbs=true` fournit une vignette, affichée à la place de l'image avec un lien vers la vidéo.
+- Les jours où l'APOD est une vidéo, elle prend l'une de deux formes. Hébergée ailleurs, c'est une URL de lecteur intégré (YouTube, Vimeo) : le paramètre `thumbs=true` en fournit alors une vignette, affichée à la place de l'image avec un lien vers la vidéo. Publiée par la NASA, c'est un simple fichier `.mp4` servi par `apod.nasa.gov` : `lib/apod.ts` le reconnaît à son extension et l'onglet le lit sur place dans un lecteur `<video>`.
+- Ces fichiers n'ont pas de vignette : l'API renvoie `thumbnail_url` vide plutôt qu'absent. `lib/apod.ts` ramène donc toute chaîne vide à `null`, sans quoi l'onglet afficherait une image cassée. La première image de la vidéo tient lieu d'aperçu.
 - La météo tient en deux appels au plan gratuit d'OpenWeatherMap, lancés en parallèle : `/data/2.5/weather` pour le relevé courant et `/data/2.5/forecast` pour la prévision à 5 jours, livrée en tranches de 3 heures.
 - Ces tranches sont regroupées par jour local, puis chaque jour suivant est représenté par sa **tranche du soir**, celle qui tombe entre 15 h et 23 h locales et le plus près de 18 h. Le dernier jour de la fenêtre s'arrête souvent avant la soirée : il est alors écarté plutôt que résumé par une tranche du matin, d'où une liste de 4 ou 5 jours selon l'heure de consultation.
 - La météo passe par un profil de cache maison, `weather`, déclaré dans `next.config.ts` : OpenWeatherMap ne rafraîchit ses données que toutes les dix minutes et l'offre gratuite est comptée à l'appel, donc revalider plus vite ne ferait que consommer le quota — deux fois plus vite encore, l'onglet appelant deux points d'entrée.

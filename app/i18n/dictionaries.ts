@@ -69,6 +69,9 @@ const fr = {
       "Chaque jour, la NASA publie une image de l'Univers accompagnée de son explication, écrite par un astronome.",
     videoBadge: "Vidéo du jour",
     watchVideo: "Regarder la vidéo",
+    videoFile: "Ouvrir la vidéo dans un nouvel onglet",
+    videoUnsupported:
+      "Votre navigateur ne peut pas lire cette vidéo. Ouvrez-la dans un nouvel onglet.",
     openSource: "Ouvrir le média d'origine",
     hdLink: "Voir en haute résolution",
     pageLink: "Page du jour sur apod.nasa.gov",
@@ -408,6 +411,9 @@ const en: Dictionary = {
       "Every day, NASA publishes an image of our universe along with its explanation, written by an astronomer.",
     videoBadge: "Video of the day",
     watchVideo: "Watch the video",
+    videoFile: "Open the video in a new tab",
+    videoUnsupported:
+      "Your browser cannot play this video. Open it in a new tab instead.",
     openSource: "Open the original media",
     hdLink: "View in high resolution",
     pageLink: "See the day's page on apod.nasa.gov",

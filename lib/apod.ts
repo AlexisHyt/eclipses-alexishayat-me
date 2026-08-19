@@ -12,6 +12,11 @@ export interface ApodPicture {
   mediaType: ApodMediaType;
   /** Still to display: the picture itself, or the thumbnail of a video */
   imageUrl: string | null;
+  /**
+   * Video file to play in place, on the days when NASA serves the video as a
+   * plain file (`.mp4`) rather than as an embedded player
+   */
+  videoUrl: string | null;
   /** Full resolution version, when NASA publishes one */
   hdImageUrl: string | null;
   /** What the picture links to: the image itself, or the video to watch */
@@ -40,10 +45,39 @@ const APOD_ENDPOINT = "https://api.nasa.gov/planetary/apod";
  */
 const TIMEOUT_MS = 15_000;
 
+/**
+ * Extensions apod.nasa.gov serves as a plain file, which a `<video>` element
+ * can play on its own. Anything else (a YouTube or Vimeo URL) is an embedded
+ * player, only linkable.
+ */
+const PLAYABLE_VIDEO_EXTENSIONS = [".mp4", ".webm", ".ogv"];
+
 function toMediaType(value: string | undefined): ApodMediaType {
   if (value === "image") return "image";
   if (value === "video") return "video";
   return "other";
+}
+
+/**
+ * A missing field comes back from the API either omitted or as an empty
+ * string — `thumbnail_url` is empty on the days when the video is a file —
+ * and both have to end up as `null` rather than as an unusable URL.
+ */
+function toUrl(value: string | undefined): string | null {
+  const trimmed = value?.trim();
+  return trimmed === undefined || trimmed === "" ? null : trimmed;
+}
+
+/** Whether a URL points at a video file rather than at an embedded player. */
+function isVideoFile(url: string | null): boolean {
+  if (url === null) return false;
+
+  // Only the file name carries the format: drop the query and the fragment.
+  const path = url.split(/[?#]/)[0].toLowerCase();
+
+  return PLAYABLE_VIDEO_EXTENSIONS.some((extension) =>
+    path.endsWith(extension),
+  );
 }
 
 /**
@@ -58,12 +92,17 @@ export function buildApodPageUrl(date: string): string {
 function toPicture(payload: ApodResponse): ApodPicture {
   const mediaType = toMediaType(payload.media_type);
   const date = payload.date ?? new Date().toISOString().slice(0, 10);
+  const url = toUrl(payload.url);
+  const hdUrl = toUrl(payload.hdurl);
 
-  // Videos have no image of their own: `thumbs=true` asks NASA for a still.
+  // A video day is served either as an embedded player, or as a file hosted by
+  // apod.nasa.gov: that one is played on the page instead of being linked to.
+  const videoUrl = mediaType !== "image" && isVideoFile(url) ? url : null;
+
+  // Embedded videos have no image of their own: `thumbs=true` asks NASA for a
+  // still. Video files get none — they are their own preview.
   const imageUrl =
-    mediaType === "image"
-      ? (payload.url ?? payload.hdurl ?? null)
-      : (payload.thumbnail_url ?? null);
+    mediaType === "image" ? (url ?? hdUrl) : toUrl(payload.thumbnail_url);
 
   return {
     date,
@@ -72,8 +111,9 @@ function toPicture(payload: ApodResponse): ApodPicture {
     copyright: payload.copyright?.trim().replace(/\s+/g, " ") ?? null,
     mediaType,
     imageUrl,
-    hdImageUrl: mediaType === "image" ? (payload.hdurl ?? null) : null,
-    sourceUrl: payload.url ?? buildApodPageUrl(date),
+    videoUrl,
+    hdImageUrl: mediaType === "image" ? hdUrl : null,
+    sourceUrl: url ?? buildApodPageUrl(date),
     pageUrl: buildApodPageUrl(date),
   };
 }
@@ -94,7 +134,7 @@ export async function getApod(date?: string): Promise<ApodPicture> {
 
   const url = new URL(APOD_ENDPOINT);
   url.searchParams.set("api_key", apiKey);
-  // Ask for a still for the days when the APOD is a video.
+  // Ask for a still for the days when the APOD is an embedded video.
   url.searchParams.set("thumbs", "true");
   if (date !== undefined) url.searchParams.set("date", date);
 

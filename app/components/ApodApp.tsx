@@ -33,6 +33,63 @@ function SourceLink({ href, children }: { href: string; children: string }) {
   );
 }
 
+/**
+ * The media of the day: a video file played on the page, the picture linked to
+ * its original, or a thumbnail linking to the video hosted elsewhere.
+ */
+function ApodMedia({ picture }: { picture: ApodPicture }) {
+  const { t } = useI18n();
+
+  if (picture.videoUrl !== null) {
+    return (
+      <div className="overflow-hidden rounded-2xl border border-white/8 bg-black">
+        {/** biome-ignore lint/a11y/useMediaCaption: NASA publishes these files
+         * without any caption track; the explanation below stands in for it. */}
+        <video
+          src={picture.videoUrl}
+          poster={picture.imageUrl ?? undefined}
+          controls
+          playsInline
+          preload="metadata"
+          className="max-h-[75vh] w-full"
+        >
+          {t.apod.videoUnsupported}
+        </video>
+      </div>
+    );
+  }
+
+  if (picture.imageUrl !== null) {
+    return (
+      <a
+        href={picture.sourceUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="group relative overflow-hidden rounded-2xl border border-white/8 bg-white/3"
+      >
+        {/** biome-ignore lint/performance/noImgElement: the picture is a
+         * remote NASA URL of unknown size, served straight from apod.nasa.gov. */}
+        <img
+          src={picture.imageUrl}
+          alt={t.apod.imageAlt(picture.title)}
+          className="w-full transition duration-500 group-hover:scale-[1.01]"
+        />
+        {picture.mediaType === "video" && (
+          <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1 text-xs font-semibold text-white/90 backdrop-blur-sm">
+            ▶ {t.apod.videoBadge}
+          </span>
+        )}
+      </a>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl border border-dashed border-white/10 px-5 py-10 text-center text-sm text-white/30">
+      {t.apod.noMedia}
+    </div>
+  );
+}
+
 export default function ApodApp() {
   const { t } = useI18n();
   const fmt = useFormatters();
@@ -85,31 +142,7 @@ export default function ApodApp() {
       </section>
 
       <figure className="flex flex-col gap-4">
-        {picture.imageUrl !== null ? (
-          <a
-            href={picture.sourceUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group relative overflow-hidden rounded-2xl border border-white/8 bg-white/3"
-          >
-            {/** biome-ignore lint/performance/noImgElement: the picture is a
-             * remote NASA URL of unknown size, served straight from apod.nasa.gov. */}
-            <img
-              src={picture.imageUrl}
-              alt={t.apod.imageAlt(picture.title)}
-              className="w-full transition duration-500 group-hover:scale-[1.01]"
-            />
-            {isVideo && (
-              <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1 text-xs font-semibold text-white/90 backdrop-blur-sm">
-                ▶ {t.apod.videoBadge}
-              </span>
-            )}
-          </a>
-        ) : (
-          <div className="rounded-2xl border border-dashed border-white/10 px-5 py-10 text-center text-sm text-white/30">
-            {t.apod.noMedia}
-          </div>
-        )}
+        <ApodMedia picture={picture} />
 
         <figcaption className="flex flex-col gap-3">
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -135,7 +168,11 @@ export default function ApodApp() {
       </figure>
 
       <div className="flex flex-wrap gap-2">
-        {isVideo && (
+        {/* A video file already plays above: its link only opens the raw file. */}
+        {picture.videoUrl !== null && (
+          <SourceLink href={picture.videoUrl}>{t.apod.videoFile}</SourceLink>
+        )}
+        {isVideo && picture.videoUrl === null && (
           <SourceLink href={picture.sourceUrl}>{t.apod.watchVideo}</SourceLink>
         )}
         {picture.hdImageUrl !== null && (

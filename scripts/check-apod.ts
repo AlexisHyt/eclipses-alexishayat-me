@@ -1,9 +1,14 @@
 import { buildApodPageUrl, getApod } from "@/lib/apod";
 
-/** Days kept as fixtures: a plain image, and a video with its thumbnail. */
+/**
+ * Days kept as fixtures: a plain image, an embedded video served with its
+ * thumbnail, and a video published as an `.mp4` file, which comes with no
+ * thumbnail at all and has to be played on the page.
+ */
 const FIXTURES = [
-  { date: "2024-04-08", expectedMedia: "image" },
-  { date: "2025-01-05", expectedMedia: "video" },
+  { date: "2024-04-08", expectedMedia: "image", expectedVideoFile: false },
+  { date: "2025-01-05", expectedMedia: "video", expectedVideoFile: false },
+  { date: "2026-05-04", expectedMedia: "video", expectedVideoFile: true },
 ] as const;
 
 async function main() {
@@ -54,13 +59,33 @@ async function main() {
       );
     }
 
-    // Images and videos alike must end up with something to display.
-    if (picture.imageUrl === null) {
-      throw new Error(`${fixture.date}: aucune image à afficher.`);
+    if (fixture.expectedVideoFile) {
+      if (picture.videoUrl === null) {
+        throw new Error(
+          `${fixture.date}: fichier vidéo attendu, aucun repéré.`,
+        );
+      }
+
+      if (!picture.videoUrl.endsWith(".mp4")) {
+        throw new Error(
+          `${fixture.date}: fichier vidéo inattendu (${picture.videoUrl}).`,
+        );
+      }
+    } else if (picture.videoUrl !== null) {
+      throw new Error(
+        `${fixture.date}: pris pour un fichier vidéo (${picture.videoUrl}).`,
+      );
     }
 
-    if (!picture.imageUrl.startsWith("https://")) {
-      throw new Error(`${fixture.date}: image servie hors HTTPS.`);
+    // Images, vignettes et fichiers vidéo : il faut un média à afficher.
+    const media = picture.videoUrl ?? picture.imageUrl;
+
+    if (media === null) {
+      throw new Error(`${fixture.date}: aucun média à afficher.`);
+    }
+
+    if (!media.startsWith("https://")) {
+      throw new Error(`${fixture.date}: média servi hors HTTPS.`);
     }
 
     if (fixture.expectedMedia === "video" && picture.hdImageUrl !== null) {
@@ -70,7 +95,7 @@ async function main() {
     }
 
     console.log(
-      `OK ${fixture.date}: « ${picture.title} » (${picture.mediaType}) → ${picture.imageUrl}`,
+      `OK ${fixture.date}: « ${picture.title} » (${picture.mediaType}${picture.videoUrl !== null ? ", fichier" : ""}) → ${media}`,
     );
   }
 
